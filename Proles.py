@@ -11,10 +11,24 @@ class Proles(mesa.Agent):
   """
     Proles:
     - Do basic production labour work
-    - Have the potential of rebel
     - Takes 85% of population
+    - Have the basic need of Maslow's pyramid, and each individual have slightly different variation on its value
+    - Have the potential of rebel based on its loyalty value
+    rebel rule:
+      - once rebel, spreading towards neighbour prole is for sure
+      - all forms of production rate goes to 0
+      - chance of kill proles and very rare chance of kill outerParty
   """
-  def __init__(self, model,):
+  def __init__(self, 
+               model,
+               pos,
+               loyalty, # the loyalty score defines if rebel or not
+               alive, # is alive
+               foodCRate, # the food consumption rate
+               foodPRate, # the food production rate
+               weaponPRate, # the weapon production rate
+               rebel # if rebel descrease neighbour loyalty score
+               ):
     super().__init__(model)
     pass
 

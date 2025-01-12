@@ -12,11 +12,41 @@ class InnerParty(mesa.Agent):
     InnerParty:
     - Make decisions requested from the 4 ministries
     - Takes 2% of population
+    - They don't really have the Maslow's pyramid need as they symbolizes the party, not real human
   """
-  def __init__(self, model,):
+  # Here we use class level variable since population belongs to this class
+  population = 2
+
+  def __init__(self,
+              model,
+              pos,
+              alive,
+              foodCRate,
+              ):
     super().__init__(model)
     pass
 
+  """
+    Here we use class method, since the function execution is on the InnerParty level
+    not for each individual, as long as there is at least 1 inner party survive, the 
+    its power still exsits.
 
-  def step(self):
+    make decision based on request
+  """
+  @classmethod
+  def step(cls, request):
+    if cls.population < 1:
+      print("*********************************************************")
+      print("------------------ BIG BROTHER IS DEAD ------------------")
+      print("*********************************************************")
+      exit()
+    # Based on the request, make the decision
+    cls.make_decision(cls, request)
+    
+  """
+    Based on request from four ministries, allocating ourterparty and prole resources to
+    the four ministries.
+  """  
+  @classmethod
+  def make_decision(cls, request):
     pass
