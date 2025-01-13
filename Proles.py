@@ -32,6 +32,23 @@ class Proles(mesa.Agent):
     super().__init__(model)
     pass
 
+  """
+    Initialize MaslowPyramid
+  """
+  def initMaslowPyramid(self):
+    pass
+
+
+  """
+    Proles can die from five ways:
+    - bomb attack
+    - hunger
+    - killed by rebelled proles
+    - killed by rebelled outerParty
+    - rebelled prole killed by Love ministry 
+  """
+  def maybe_die(self):
+    pass
 
   def step(self):
     pass

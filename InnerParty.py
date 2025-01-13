@@ -27,6 +27,14 @@ class InnerParty(mesa.Agent):
     pass
 
   """
+    Inner party member can die from two ways:
+    - bomb attack
+    - hunger
+  """
+  def maybe_die(self):
+    pass
+
+  """
     Here we use class method, since the function execution is on the InnerParty level
     not for each individual, as long as there is at least 1 inner party survive, the 
     its power still exsits.

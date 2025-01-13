@@ -27,7 +27,7 @@ class OuterParty(mesa.Agent):
   def __init__(self,
               model,
               pos,
-              loyalty, # the loyalty score defines if rebel or not, the higher the loyalty, the sharp in response with rebel behavoiur
+              loyalty, # the loyalty score defines if rebel or not, the higher the loyalty, the more likely to detect rebel behavoiur
               alive, # is alive
               foodCRate, # the food consumption rate
               rebel, # if rebel able to influce other outerParty's loyalty value, have more chance of move randomly
@@ -36,6 +36,16 @@ class OuterParty(mesa.Agent):
     super().__init__(model)
     pass
 
+  """
+    OuterParty can die from 3 ways:
+    - bomb attack
+    - hunger
+    - killed by rebelled proles
+    - killed by rebelled outerParty
+    - rebelled outerParty killed by Love ministry
+  """
+  def maybe_die(self):
+    pass
 
   def step(self):
     pass
