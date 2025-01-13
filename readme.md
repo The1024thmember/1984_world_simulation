@@ -1,7 +1,6 @@
 ### Objectives:
-- To observe the emergent behaviour from the crowd with the social context
-- To determine how many percentage of the emergent behaviour are beneficiary/ detrimental to the party
-- What properties would need the emergent behaviour to equip to be able to destroy the party. (Here the emergent behaviour should be the derivative for the state, and the attributes / properties would be the derivative of the emergent behaviour, so it will be a double derivate of the state. It can be quite ambitious to discover this, in my opinion, it is kind of equivalent of setting up an earth, and observe the evolution of earth and find the formation of protein ("emergent behaviour") and then study what kind of attributes the protein need to have to kill other protein)
+- To observe the evolvement of the society with the define structure similar to the 1984
+- To experiment with the hyper parameters and observe their impact on the society's evolvement
 
 ### Structure
 
@@ -60,3 +59,15 @@ The ministry of Love majorly monitor Outer party, rarely on Proles,
 The ministry of truth generates information
 - Requests from inner party - Outer party member
 - Effect on proles (safety need), if not function properly, rebel from proles.
+
+
+##### Interaction between ministries and classes
+
+| **Ministry**           | **Interaction with Proles**                                                              | **Interaction with Outer Party**                                                                                                                                                      | **Interaction with Inner Party**                                                                                  |
+| ---------------------- | ---------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------- |
+| **Ministry of Love**   | o: kill rebelled proles                                                                  | i: ensure ministry of love's normal function - proper monitoring and transforming<br><br>o: monitoring and transform rebelled outer party either by kill or reshape with high loyalty | i: need decision from inner party on resources allocation                                                         |
+| **Ministry of Peace**  | i: uses labor for weapon maunfacturing<br><br>o: ensure prole won't die from bomb attack | i: ensure ministry of peace's normal function - proles labour are effective<br><br>o: ensure outer party won't die from bomb attack                                                   | i: need decision from inner party on resources allocation<br><br>o: ensure inner party won't die from bomb attack |
+| **Ministry of Truth**  | o: increases proles loyalty                                                              | i: ensure ministry of truth's normal function <br><br>o: increase outer party's loyalty                                                                                               | i: need decision from inner party on resources allocation                                                         |
+| **Ministry of Plenty** | i: uses labour for food production<br><br>o: allocate food to prole                      | i: ensure ministry of plenty's normal function <br><br>o: allocate food to Outer party<br><br>                                                                                        | i: need decision from inner party on resources allocation<br><br>o: allocate food to inner party<br>              |
+
+
