@@ -16,5 +16,7 @@ class LoveMinistry():
     - The number of rebelled agents in the queue
     - The delta of metricks from last step to current step
   """
-  def __init__(self):
+  def __init__(self,
+               nOuterParty,
+               nInnerParty):
     pass

@@ -31,6 +31,9 @@ class OuterParty(mesa.Agent):
               loyalty, # the loyalty score defines if rebel or not, the higher the loyalty, the more likely to detect rebel behavoiur
               alive, # is alive
               foodCRate, # the food consumption rate
+              foodStock, # current food holding
+              senseOfHunger, # the preception of hunger via network effect and the agent's own feeling
+              senseOfSafety, # the perception of safegy via network effect
               rebel, # if rebel able to influce other outerParty's loyalty value, have more chance of move randomly
               ministry # the ministry is worked in
               ):

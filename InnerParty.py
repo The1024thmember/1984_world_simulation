@@ -19,9 +19,9 @@ class InnerParty(mesa.Agent):
 
   def __init__(self,
               model,
-              pos,
-              alive,
-              foodCRate,
+              pos, # current position
+              alive, # is alive
+              foodCRate, # food consumption rate
               ):
     super().__init__(model)
     pass

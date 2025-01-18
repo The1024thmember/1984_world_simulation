@@ -26,8 +26,12 @@ class Proles(mesa.Agent):
                alive, # is alive
                foodCRate, # the food consumption rate
                foodPRate, # the food production rate
+               foodStock, # the current food holding
+               senseOfHunger, # the preception of hunger via network effect and the agent's own feeling
+               senseOfSafety, # the perception of safegy via network effect
                weaponPRate, # the weapon production rate
-               rebel # if rebel descrease neighbour loyalty score
+               rebel, # if rebel descrease neighbour loyalty score
+               ministry # the ministry prole is in (Peace or Plenty)
                ):
     super().__init__(model)
     pass

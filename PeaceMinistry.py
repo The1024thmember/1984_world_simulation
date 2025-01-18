@@ -12,5 +12,8 @@ class PeaceMinistry():
     - The number of agents killed in current step
     - The delta of metricks from last step to current step
   """
-  def __init__(self):
+  def __init__(self,
+               nProles,
+               nOuterParty,
+               nInnerParty):
     pass
