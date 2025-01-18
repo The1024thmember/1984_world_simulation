@@ -30,6 +30,8 @@ class InnerParty(mesa.Agent):
     Inner party member can die from two ways:
     - bomb attack
     - hunger
+
+    remove from the grid, reduce the number of InnerParty in All ministries
   """
   def maybe_die(self):
     pass
@@ -52,7 +54,7 @@ class InnerParty(mesa.Agent):
     cls.make_decision(cls, request)
     
   """
-    Based on request from four ministries, allocating ourterparty and prole resources to
+    Based on the performance of four ministries, allocating ourterparty and prole resources to
     the four ministries.
   """  
   @classmethod

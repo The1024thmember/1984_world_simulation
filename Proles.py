@@ -45,7 +45,9 @@ class Proles(mesa.Agent):
     - hunger
     - killed by rebelled proles
     - killed by rebelled outerParty
-    - rebelled prole killed by Love ministry 
+    - rebelled prole killed by Love ministry    
+    
+    remove from the grid, reduce the number Proles in corresponding ministry
   """
   def maybe_die(self):
     pass

@@ -21,7 +21,8 @@ class OuterParty(mesa.Agent):
       - if neighbour outerParty have lower loyalty score, decrease the neighbour outerParty loyalty score
       - the more neighbour is rebel, the more effective in decreasing low loyalty score neighbour outerParty's loyalty score
       rebel action:
-      - once there are more than n amount of rebel outerParty, random events will happen (low chance of kill outerParty, very low chance of kill proles,  disfunction on ministry's duty, etc)
+      - once there are more than n amount of rebel outerParty, random events will happen (low chance of kill outerParty, 
+      very low chance of kill proles,  disfunction on ministry's duty, etc)
 
   """
   def __init__(self,
@@ -43,6 +44,8 @@ class OuterParty(mesa.Agent):
     - killed by rebelled proles
     - killed by rebelled outerParty
     - rebelled outerParty killed by Love ministry
+
+    remove from the grid, reduce the number OuterParty in corresponding minitry
   """
   def maybe_die(self):
     pass
