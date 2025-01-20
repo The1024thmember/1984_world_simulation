@@ -1,3 +1,5 @@
+
+
 ### Mesa version = 3.0.3
 import mesa
 import warnings
@@ -34,7 +36,18 @@ class Proles(mesa.Agent):
                ministry # the ministry prole is in (Peace or Plenty)
                ):
     super().__init__(model)
-    pass
+    self.model = model
+    self.pos = pos
+    self.loyalty = loyalty
+    self.alive = alive
+    self.foodCRate = foodCRate
+    self.foodPRate = foodPRate
+    self.foodStock = foodStock
+    self.senseOfHunger = senseOfHunger
+    self.senseOfSafety = senseOfSafety
+    self.weaponPRate = weaponPRate
+    self.rebel = rebel
+    self.ministry = ministry
 
   """
     Initialize MaslowPyramid

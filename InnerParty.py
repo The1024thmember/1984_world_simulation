@@ -22,9 +22,14 @@ class InnerParty(mesa.Agent):
               pos, # current position
               alive, # is alive
               foodCRate, # food consumption rate
+              foodStock, # the current food holding
               ):
     super().__init__(model)
-    pass
+    self.model = model
+    self.pos = pos
+    self.alive = alive
+    self.foodCRate = foodCRate
+    self.foodStock = foodStock
 
   """
     Inner party member can die from two ways:

@@ -13,7 +13,25 @@ class PeaceMinistry():
     - The delta of metricks from last step to current step
   """
   def __init__(self,
-               nProles,
-               nOuterParty,
-               nInnerParty):
+               proles, # a list of prole that work for peace that work for peace ministry
+               outerParties, # a list of outer party that work for peace ministry
+               nInnerParty, # number of inner party
+               ):
+    self.proles = proles
+    self.outerParties = outerParties
+    self.nInnerParty = nInnerParty
+    self.weapons = 0 # number of weapon built
+    pass
+
+  def collectWeapons(self):
+    """
+      Collect weapons built by proles
+    """
+    for each in self.proles:
+      self.weapons += each.weaponPRate
+
+  def defendBombAttack(self):
+    """
+      Defend bomb attack based on the number of Weapons and the number of OuterParty
+    """
     pass
