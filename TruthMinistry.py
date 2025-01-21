@@ -15,6 +15,25 @@ class TruthMinistry():
     - The delta of metricks from last step to current step
   """
   def __init__(self,
-               nOuterParty,
-               nInnerParty):
+               outerParties, # a list of outer party that work for peace ministry
+               nInnerParty, # number of inner party
+              ):
+    self.outerParties = outerParties
+    self.nInnerParty = nInnerParty
+    pass
+
+  def increaseLoyaltyScore(self):
+    """
+      Increase loyalty score for every agent by n
+    """
+    pass
+
+  def cutOffNegativeImpact(self):
+    """
+      Events like hunger and bomb attack can spread and decrease the loyalty number
+      for neighbour agent, reduce the impact of such event on neighbouring agent
+    """
+    pass
+
+  def getMetricks(self):
     pass

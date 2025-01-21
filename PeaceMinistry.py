@@ -21,6 +21,7 @@ class PeaceMinistry():
     self.outerParties = outerParties
     self.nInnerParty = nInnerParty
     self.weapons = 0 # number of weapon built
+    self.agentsDiedOfBomb = 0
     pass
 
   def collectWeapons(self):
@@ -33,5 +34,11 @@ class PeaceMinistry():
   def defendBombAttack(self):
     """
       Defend bomb attack based on the number of Weapons and the number of OuterParty
+    """
+    pass
+
+  def getMetricks(self, diedAgents):
+    """
+      Return the number of agents died because of bomb attack
     """
     pass

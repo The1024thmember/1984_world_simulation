@@ -17,6 +17,38 @@ class LoveMinistry():
     - The delta of metricks from last step to current step
   """
   def __init__(self,
-               nOuterParty,
-               nInnerParty):
+               outerParties, # a list of outer party that work for peace ministry
+               nInnerParty, # number of inner party
+               ):
+    self.outerParties = outerParties
+    self.nInnerParty = nInnerParty
+    self.rebelQueue = []
+    pass
+
+  def antiRebelSpread(self):
+    """
+     Stop the spread of rebel between proles and between outerparties
+    """
+    pass
+
+  def transformAgent(self):
+    """
+     Transform agent to have very high loyaty score
+    """
+    pass
+
+  def executeAgent(self):
+    """
+     Execute the agent
+    """
+    pass
+
+  def processRebelCase(self):
+    """
+      FIFO get n agent from rebel queue, n depends on the number of outerParty in PeaceMinistry
+      Decide to transform outerParty agent or execute outerParty agent
+      Execute proles
+    """
+
+  def getMetricks(self):
     pass

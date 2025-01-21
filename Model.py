@@ -4,6 +4,15 @@ import random
 
 from enum import Enum
 
+from BombAttack import BombAttack
+from InnerParty import InnerParty
+from LoveMinistry import LoveMinistry
+from OuterParty import OuterParty
+from PeaceMinistry import PeaceMinistry
+from PlentyMinistry import PlentyMinistry
+from Proles import Proles
+from TruthMinistry import TruthMinistry
+
 class Ministry(Enum):
     Peace = 1
     Plenty = 2
@@ -14,6 +23,12 @@ class Classes(Enum):
    Proles = 1
    OuterParty = 2
    InnerParty = 3
+
+class CauseOfDeath(Enum):
+   Hunger = 1
+   BombAttack = 2
+   Execution = 3 # The agent died from ministry of love execution
+   Murder = 4 # The agent died from murder by rebelled agents
 
 class BasicModel(mesa.Model):
   """
@@ -61,12 +76,24 @@ class BasicModel(mesa.Model):
 
     self.initial_population = initial_population
     self.agentDistribution = agentDistribution
+    self.numberOfInnerParty = 0
     self.ministryResourcesDistribution = ministryResourcesDistribution
     # Initiate width and height og the sugar space
     self.width = width
     self.height = height
     # The position that already has an agent on it
     self.spotTaken = []
+    # The agents that died in current step
+    self.diedAgent = {}
+    for cause in CauseOfDeath:
+       self.diedAgent[cause.name] = []
+
+    # The rebelled agents
+    self.rebeledAgents = {
+       Classes.OuterParty:[],
+       Classes.Proles:[]
+    }
+
 
     # four ministry members
     self.ministryMembers = {
@@ -106,9 +133,60 @@ class BasicModel(mesa.Model):
     self.random = random.Random()
     self.initial_population = initial_population
 
+    # Initialize agents
+    self.initializeInnerParty()
+    self.initalizeOuterParty()
+    self.initializeProles()
+
+    # Initialize four minitries
+    peaceMinistry = PeaceMinistry(
+       proles = self.ministryMembers[Ministry.Peace][Classes.Proles],
+       outerParties = self.ministryMembers[Ministry.Peace][Classes.OuterParty],
+       nInnerParty = self.numberOfInnerParty
+    )
+
+    plentyMinistry = PlentyMinistry(
+       proles = self.ministryMembers[Ministry.Plenty][Classes.Proles],
+       outerParties = self.ministryMembers[Ministry.Plenty][Classes.OuterParty],
+       nInnerParty = self.numberOfInnerParty
+    )
+
+    loveMinistry = LoveMinistry(
+       outerParties = self.ministryMembers[Ministry.Love][Classes.OuterParty],
+       nInnerParty = self.numberOfInnerParty
+    )
+
+    truthMinistry = TruthMinistry(
+       outerParties = self.ministryMembers[Ministry.Truth][Classes.OuterParty],
+       nInnerParty = self.numberOfInnerParty
+    )
+
+    # Initialize bomb attack
+    bomb = BombAttack(
+       frequency = bombAttackFrequency, 
+       maxImpactSize = maxBombAttackImpactSize,
+       width = self.width,
+       height = self.height
+    )
+    pass
+
+
+  """
+  Proles should do their production
+  OuterParty should fulfill their duty
+  InnerParty should fulfill their duty
+  Bomb should prepare to attack randomly
+  """
+  def step(self):
+    pass
+
+
+
+  
+  def initializeInnerParty(self):
     # Initialize InnerParty
-    numberOfInnerParty = agentDistribution[Classes.InnerParty]*self.initial_population
-    for i in range(numberOfInnerParty):
+    self.numberOfInnerParty = self.agentDistribution[Classes.InnerParty]*self.initial_population
+    for i in range(self.numberOfInnerParty):
         # Find a unique spot for the InnerParty agent
         while True:
             x = self.random.randrange(self.width)
@@ -129,9 +207,11 @@ class BasicModel(mesa.Model):
 
         # Mark the spot as taken
         self.spotTaken.append((x, y))
+  
 
+  def initalizeOuterParty(self):
     # Initialize OuterParty
-    numberOfOuterParty = agentDistribution[Classes.OuterParty]*self.initial_population
+    numberOfOuterParty = self.agentDistribution[Classes.OuterParty]*self.initial_population
     outerPartyMinistryDistribution = get_ministry_distribution(self.ministryResourcesDistribution, Classes.OuterParty)
     
     for i in range(numberOfOuterParty):
@@ -162,14 +242,15 @@ class BasicModel(mesa.Model):
         # put the outer party into certain ministry
         self.ministryMembers[ministry][Classes.OuterParty].append(outerParty)
             
-        self.grid.place_agent(innerParty, (x, y))
-        self.schedule.add(innerParty)
+        self.grid.place_agent(outerParty, (x, y))
+        self.schedule.add(outerParty)
 
         # Mark the spot as taken
         self.spotTaken.append((x, y))
 
+  def initializeProles(self):
     # Initialize Proles
-    numberOfProles = agentDistribution[Classes.Proles]*self.initial_population
+    numberOfProles = self.agentDistribution[Classes.Proles]*self.initial_population
     prolesMinistryDistribution = get_ministry_distribution(self.ministryResourcesDistribution, Classes.Proles)
 
     for i in range(numberOfProles):
@@ -189,35 +270,17 @@ class BasicModel(mesa.Model):
             loyalty = 100, # The agent should start with full loyalty score
             alive=True,
             foodCRate=1.0,  # The unit of food get consumed
-            foodPRate = 2.0 
+            foodPRate = 2.0, 
             foodStock=0,
             senseOfHunger = 0, # The agent should start with 0 sense of hunger
             senseOfSafety = 0, # The agent should start with 0 sense of safetly
             weaponPRate = 0.5,
             rebel = False,
-            ministry = ministry
+            ministry = ministry,
         )
 
         # put the proles into certain ministry
         self.ministryMembers[ministry][Classes.Proles].append(prole)
-
-    # Initialize bomb attack
-    bomb = BombAttack(
-       frequency = bombAttackFrequency, 
-       maxImpactSize = maxBombAttackImpactSize,
-       width = self.width,
-       height = self.height
-    )
-
-
-  """
-  Proles should do their production
-  OuterParty should fulfill their duty
-  InnerParty should fulfill their duty
-  Bomb should prepare to attack randomly
-  """
-  def step(self):
-    pass
 
 
 def get_ministry_distribution(ministryResourcesDistribution, class_type):
