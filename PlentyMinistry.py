@@ -23,9 +23,14 @@ class PlentyMinistry():
     self.agentDiedOfHunger = 0
     pass
 
-  def distributeFood(self):
+  def generateAndDistributeFood(self):
     """
-      Use network diffusion, distribute food to every agent
+      Locate the proles location, generate food on this location
+      Use network diffusion, distribute food to every agent based on their location
+      Agents then put the newly distruibuted food into their stock for consumption
+
+      Keep in mind that this function should take the number of OuterParty and rebel 
+      and etc as input, as it impacts the food generation and distruibution process
     """
     pass
 

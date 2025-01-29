@@ -13,6 +13,7 @@ from PlentyMinistry import PlentyMinistry
 from Proles import Proles
 from TruthMinistry import TruthMinistry
 
+
 class Ministry(Enum):
     Peace = 1
     Plenty = 2
@@ -29,6 +30,16 @@ class CauseOfDeath(Enum):
    BombAttack = 2
    Execution = 3 # The agent died from ministry of love execution
    Murder = 4 # The agent died from murder by rebelled agents
+
+class RebelOuterPartyActions(Enum):
+   KillProle = 1
+   KillOuterParty = 2
+   Misfunction = 3
+
+class RebelProleActions(Enum):
+   KillProle = 1
+   KillOuterParty = 2
+   Misfunction = 3
 
 class BasicModel(mesa.Model):
   """
@@ -71,13 +82,33 @@ class BasicModel(mesa.Model):
       width = 17, # we want to ensure population will not fill the space, since the outerparty can move around 
       height = 17, 
       initial_population = 200, # initial population
+      initialFoodStock = 3, # the initial food that every agent has
+      minFoodCRate = 1,
+      maxFoodCRate = 3,
+      minFoodPRate = 2,
+      maxFoodPRate = 4,
+      minWeaponPRate = 1,
+      maxWeaponPRate = 3,
   ):
     super().__init__()
+    
+    # Initialize a random number generator
+    self.random = random.Random()
 
     self.initial_population = initial_population
     self.agentDistribution = agentDistribution
     self.numberOfInnerParty = 0
     self.ministryResourcesDistribution = ministryResourcesDistribution
+    
+    self.minFoodCRate = minFoodCRate
+    self.maxFoodCRate = maxFoodCRate
+    self.minFoodPRate = minFoodPRate
+    self.maxFoodPRate = maxFoodPRate
+    self.minWeaponPRate = minWeaponPRate
+    self.maxWeaponPRate = maxWeaponPRate
+
+    self.initialFoodStock = initialFoodStock
+
     # Initiate width and height og the sugar space
     self.width = width
     self.height = height
@@ -129,8 +160,6 @@ class BasicModel(mesa.Model):
     # Scheduler
     self.schedule = mesa.time.RandomActivationByType(self)
 
-    # Initialize a random number generator
-    self.random = random.Random()
     self.initial_population = initial_population
 
     # Initialize agents
@@ -139,35 +168,36 @@ class BasicModel(mesa.Model):
     self.initializeProles()
 
     # Initialize four minitries
-    peaceMinistry = PeaceMinistry(
+    self.peaceMinistry = PeaceMinistry(
        proles = self.ministryMembers[Ministry.Peace][Classes.Proles],
        outerParties = self.ministryMembers[Ministry.Peace][Classes.OuterParty],
        nInnerParty = self.numberOfInnerParty
     )
 
-    plentyMinistry = PlentyMinistry(
+    self.plentyMinistry = PlentyMinistry(
        proles = self.ministryMembers[Ministry.Plenty][Classes.Proles],
        outerParties = self.ministryMembers[Ministry.Plenty][Classes.OuterParty],
        nInnerParty = self.numberOfInnerParty
     )
 
-    loveMinistry = LoveMinistry(
+    self.loveMinistry = LoveMinistry(
        outerParties = self.ministryMembers[Ministry.Love][Classes.OuterParty],
        nInnerParty = self.numberOfInnerParty
     )
 
-    truthMinistry = TruthMinistry(
+    self.truthMinistry = TruthMinistry(
        outerParties = self.ministryMembers[Ministry.Truth][Classes.OuterParty],
        nInnerParty = self.numberOfInnerParty
     )
 
     # Initialize bomb attack
-    bomb = BombAttack(
+    self.bomb = BombAttack(
        frequency = bombAttackFrequency, 
        maxImpactSize = maxBombAttackImpactSize,
        width = self.width,
        height = self.height
     )
+
     pass
 
 
@@ -178,11 +208,32 @@ class BasicModel(mesa.Model):
   Bomb should prepare to attack randomly
   """
   def step(self):
-    pass
+    # Get rebelled agent activity
+    self.getRebelledAgentActivity()
+
+    # Food production, the proles produces food, then get distruibuted
+    self.plentyMinistry.generateAndDistributeFood()
+
+    # Weapon production
+
+    # Bomb attack
+
+    # Food consumption
+
+    # Other logic such as rebel and etc.
 
 
+  def getRebelledAgentActivity(self):
+     """
+      Since the rebelled agent can do a varity of actions, and we decide to let the rebelled
+      agent randomly choose one action at a time, since all the action also have possibilities
+     """
+     self.rebeledAgents = {
+       Classes.OuterParty:[],
+       Classes.Proles:[]
+    }
 
-  
+
   def initializeInnerParty(self):
     # Initialize InnerParty
     self.numberOfInnerParty = self.agentDistribution[Classes.InnerParty]*self.initial_population
@@ -199,8 +250,8 @@ class BasicModel(mesa.Model):
             model=self,
             pos=(x, y),
             alive=True,
-            foodCRate=1.0,  # The unit of food get consumed
-            foodStock=0,
+            foodCRate=self.getFoodConsumeRate(self.minFoodCRate,self.maxFoodCRate),  # The unit of food get consumed
+            foodStock=self.initialFoodStock,
         )
         self.grid.place_agent(innerParty, (x, y))
         self.schedule.add(innerParty)
@@ -232,8 +283,8 @@ class BasicModel(mesa.Model):
             pos=(x, y),
             loyalty = 100, # The agent should start with full loyalty score
             alive=True,
-            foodCRate=1.0,  # The unit of food get consumed
-            foodStock=0,
+            foodCRate=self.getFoodConsumeRate(self.minFoodCRate,self.maxFoodCRate),  # The unit of food get consumed
+            foodStock=self.initialFoodStock,
             senseOfHunger = 0, # The agent should start with 0 sense of hunger
             senseOfSafety = 0, # The agent should start with 0 sense of safetly
             rebel = False,
@@ -262,19 +313,19 @@ class BasicModel(mesa.Model):
                 break  # Exit the loop when an empty spot is found
 
         ministry = get_Ministry_for_outer_party_and_prole(i, prolesMinistryDistribution)
-
+       
         # Create and place the Prole agent
         prole = Proles(
             model=self,
             pos=(x, y),
             loyalty = 100, # The agent should start with full loyalty score
-            alive=True,
-            foodCRate=1.0,  # The unit of food get consumed
-            foodPRate = 2.0, 
-            foodStock=0,
+            alive= True,
+            foodCRate= self.getFoodConsumeRate(self.minFoodCRate,self.maxFoodCRate),  # The unit of food get consumed
+            foodPRate = self.getFoodProductionRate(self.minFoodPRate,self.maxFoodPRate), 
+            foodStock= self.initialFoodStock,
             senseOfHunger = 0, # The agent should start with 0 sense of hunger
             senseOfSafety = 0, # The agent should start with 0 sense of safetly
-            weaponPRate = 0.5,
+            weaponPRate = self.getWeaponProductionRate(self.minWeaponPRate, self.maxWeaponPRate),
             rebel = False,
             ministry = ministry,
         )
@@ -282,6 +333,23 @@ class BasicModel(mesa.Model):
         # put the proles into certain ministry
         self.ministryMembers[ministry][Classes.Proles].append(prole)
 
+  def getFoodConsumeRate(self, minConsumption, maxConsumption):
+    """
+    Return a normal distruibution sampled food consumption rate
+    """
+    return self.random.uniform(minConsumption, maxConsumption+1)
+
+  def getFoodProductionRate(self, minProduction, maxProduction):
+    """
+    Return a normal distruibution sampled food production rate
+    """
+    return self.random.uniform(minProduction, maxProduction+1)
+
+  def getWeaponProductionRate(self, minProduction, maxProduction):
+    """
+    Return a normal distruibution sampled weapon production rate
+    """
+    return self.random.uniform(minProduction, maxProduction+1)
 
 def get_ministry_distribution(ministryResourcesDistribution, class_type):
     """
@@ -313,3 +381,6 @@ def get_Ministry_for_outer_party_and_prole(index, ministryRange):
         if start <= index <= end:
             return ministry
     return None  # In case the index is out of range
+
+
+
