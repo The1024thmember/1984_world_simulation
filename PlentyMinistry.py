@@ -39,3 +39,10 @@ class PlentyMinistry():
       Return the number of agents died because of hunger
     """
     pass
+
+  
+  def allocateNewResources(self, resources):
+    """
+      Allocate new resources for this ministry
+    """
+    pass

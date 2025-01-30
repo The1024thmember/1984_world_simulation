@@ -37,3 +37,11 @@ class TruthMinistry():
 
   def getMetricks(self):
     pass
+
+
+  
+  def allocateNewResources(self, resources):
+    """
+      Allocate new resources for this ministry
+    """
+    pass

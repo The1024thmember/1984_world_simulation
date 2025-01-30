@@ -40,5 +40,12 @@ class PeaceMinistry():
   def getMetricks(self, diedAgents):
     """
       Return the number of agents died because of bomb attack
+      As well as the current resources allocated to this ministry
+    """
+    pass
+
+  def allocateNewResources(self, resources):
+    """
+      Allocate new resources for this ministry
     """
     pass

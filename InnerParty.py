@@ -63,5 +63,5 @@ class InnerParty(mesa.Agent):
     the four ministries.
   """  
   @classmethod
-  def make_decision(cls, request):
+  def make_decision(cls, metrics):
     pass

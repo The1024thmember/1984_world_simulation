@@ -215,6 +215,7 @@ class BasicModel(mesa.Model):
     self.plentyMinistry.generateAndDistributeFood()
 
     # Weapon production
+    self.peaceMinistry.collectWeapons()
 
     # Bomb attack
 
@@ -222,6 +223,20 @@ class BasicModel(mesa.Model):
 
     # Other logic such as rebel and etc.
 
+    # Collect metrics and inner party make decisions on whether to adjust resources allocation
+    self.plentyMinistry.getMetricks()
+    self.peaceMinistry.getMetricks()
+    self.loveMinistry.getMetricks()
+    self.truthMinistry.getMetricks()
+
+    # Inner party make decision
+    InnerParty.make_decision(metrics)
+
+    # Ministries renew their resources
+    self.plentyMinistry.allocateNewResources()
+    self.peaceMinistry.allocateNewResources()
+    self.loveMinistry.allocateNewResources()
+    self.truthMinistry.allocateNewResources()    
 
   def getRebelledAgentActivity(self):
      """
