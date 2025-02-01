@@ -1,3 +1,6 @@
+from Common import Classes
+
+
 class PeaceMinistry():
   """
   Labour: 
@@ -21,7 +24,7 @@ class PeaceMinistry():
     self.outerParties = outerParties
     self.nInnerParty = nInnerParty
     self.weapons = 0 # number of weapon built
-    self.agentsDiedOfBomb = 0
+    self.numberOfDiedAgents = 0
     pass
 
   def collectWeapons(self):
@@ -37,10 +40,10 @@ class PeaceMinistry():
     """
     pass
 
-  def getMetricks(self, diedAgents):
+  def getMetricks(self):
     """
-      Return the number of agents died because of bomb attack
-      As well as the current resources allocated to this ministry
+      Collect the number of agents died because of bomb attack
+      Calculate the delta
     """
     pass
 
@@ -48,4 +51,5 @@ class PeaceMinistry():
     """
       Allocate new resources for this ministry
     """
-    pass
+    self.proles=resources[Classes.Proles]
+    self.outerParties=resources[Classes.OuterParty]

@@ -2,9 +2,9 @@
 import mesa
 import random
 
-from enum import Enum
 
 from BombAttack import BombAttack
+from Common import CauseOfDeath, Classes, Ministry
 from InnerParty import InnerParty
 from LoveMinistry import LoveMinistry
 from OuterParty import OuterParty
@@ -12,34 +12,6 @@ from PeaceMinistry import PeaceMinistry
 from PlentyMinistry import PlentyMinistry
 from Proles import Proles
 from TruthMinistry import TruthMinistry
-
-
-class Ministry(Enum):
-    Peace = 1
-    Plenty = 2
-    Truth = 3
-    Love = 4
-
-class Classes(Enum):
-   Proles = 1
-   OuterParty = 2
-   InnerParty = 3
-
-class CauseOfDeath(Enum):
-   Hunger = 1
-   BombAttack = 2
-   Execution = 3 # The agent died from ministry of love execution
-   Murder = 4 # The agent died from murder by rebelled agents
-
-class RebelOuterPartyActions(Enum):
-   KillProle = 1
-   KillOuterParty = 2
-   Misfunction = 3
-
-class RebelProleActions(Enum):
-   KillProle = 1
-   KillOuterParty = 2
-   Misfunction = 3
 
 class BasicModel(mesa.Model):
   """
@@ -218,35 +190,37 @@ class BasicModel(mesa.Model):
     self.peaceMinistry.collectWeapons()
 
     # Bomb attack
+    # 1. Casualty
+    # 2. Spread of sense of safety via network effect
 
     # Food consumption
+    # 1. Hunger
+    # 2. Spread of sense of hunger via network effect
 
-    # Other logic such as rebel and etc.
+    # Rebel spreading effect via network effect
 
     # Collect metrics and inner party make decisions on whether to adjust resources allocation
-    self.plentyMinistry.getMetricks()
-    self.peaceMinistry.getMetricks()
-    self.loveMinistry.getMetricks()
-    self.truthMinistry.getMetricks()
+    metrics = {}
+    metrics[Ministry.Plenty]=self.plentyMinistry.getMetricks()
+    metrics[Ministry.Peace]=self.peaceMinistry.getMetricks()
+    metrics[Ministry.Love]=self.loveMinistry.getMetricks()
+    metrics[Ministry.Truth]=self.truthMinistry.getMetricks()
 
     # Inner party make decision
-    InnerParty.make_decision(metrics)
+    self.ministryMembers = InnerParty.make_decision(metrics, self.ministryMembers)
 
     # Ministries renew their resources
-    self.plentyMinistry.allocateNewResources()
-    self.peaceMinistry.allocateNewResources()
-    self.loveMinistry.allocateNewResources()
-    self.truthMinistry.allocateNewResources()    
+    self.plentyMinistry.allocateNewResources(self.ministryMembers[Ministry.Plenty])
+    self.peaceMinistry.allocateNewResources(self.ministryMembers[Ministry.Peace])
+    self.loveMinistry.allocateNewResources(self.ministryMembers[Ministry.Love])
+    self.truthMinistry.allocateNewResources(self.ministryMembers[Ministry.Truth])    
 
   def getRebelledAgentActivity(self):
      """
       Since the rebelled agent can do a varity of actions, and we decide to let the rebelled
       agent randomly choose one action at a time, since all the action also have possibilities
      """
-     self.rebeledAgents = {
-       Classes.OuterParty:[],
-       Classes.Proles:[]
-    }
+     pass
 
 
   def initializeInnerParty(self):

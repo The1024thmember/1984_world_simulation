@@ -63,5 +63,10 @@ class InnerParty(mesa.Agent):
     the four ministries.
   """  
   @classmethod
-  def make_decision(cls, metrics):
+  def make_decision(cls, metrics, existingMinistryMembers):
+    """
+      Combine the data from metrcs and existingMinistryMembers
+      Shift the resources between ministries
+    """
     pass
+

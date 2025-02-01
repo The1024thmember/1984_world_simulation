@@ -1,3 +1,7 @@
+
+from Common import Classes
+
+
 class PlentyMinistry():
   """
   Labour: 
@@ -20,7 +24,7 @@ class PlentyMinistry():
     self.proles = proles
     self.outerParties = outerParties
     self.nInnerParty = nInnerParty
-    self.agentDiedOfHunger = 0
+    self.numberOfDiedAgents = 0
     pass
 
   def generateAndDistributeFood(self):
@@ -34,9 +38,10 @@ class PlentyMinistry():
     """
     pass
 
-  def getMetricks(self, diedAgents):
+  def getMetricks(self):
     """
-      Return the number of agents died because of hunger
+      Collect the number of agents died because of hunger in this round
+      Calculate the delta
     """
     pass
 
@@ -45,4 +50,5 @@ class PlentyMinistry():
     """
       Allocate new resources for this ministry
     """
-    pass
+    self.proles = resources[Classes.Proles]
+    self.outerParties = resources[Classes.OuterParty]

@@ -1,3 +1,6 @@
+from Common import Classes
+
+
 class TruthMinistry():
   """
   Labour: 
@@ -20,6 +23,7 @@ class TruthMinistry():
               ):
     self.outerParties = outerParties
     self.nInnerParty = nInnerParty
+    self.numberOfTransformedRebelledAgents = 0
     pass
 
   def increaseLoyaltyScore(self):
@@ -36,6 +40,10 @@ class TruthMinistry():
     pass
 
   def getMetricks(self):
+    """
+      Collect the number of agents transformed to rebel
+      Calculate the delta
+    """
     pass
 
 
@@ -44,4 +52,4 @@ class TruthMinistry():
     """
       Allocate new resources for this ministry
     """
-    pass
+    self.outerParties = resources[Classes.OuterParty]

@@ -1,3 +1,6 @@
+from Common import Classes
+
+
 class LoveMinistry():
   """
   Labour: 
@@ -23,6 +26,7 @@ class LoveMinistry():
     self.outerParties = outerParties
     self.nInnerParty = nInnerParty
     self.rebelQueue = []
+    self.numberOfQueuedRebelledAgents = 0
     pass
 
   def antiRebelSpread(self):
@@ -51,6 +55,10 @@ class LoveMinistry():
     """
 
   def getMetricks(self):
+    """
+      Collect the number of rebelled agents in the queue
+      Calculate the delta
+    """
     pass
 
   
@@ -58,4 +66,4 @@ class LoveMinistry():
     """
       Allocate new resources for this ministry
     """
-    pass
+    self.outerParties = resources[Classes.OuterParty]
