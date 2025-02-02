@@ -4,7 +4,7 @@ import random
 
 
 from BombAttack import BombAttack
-from Common import CauseOfDeath, Classes, Ministry
+from Common import CauseOfDeath, Classes, Ministry, RebelOuterPartyActions, RebelProleActions
 from InnerParty import InnerParty
 from LoveMinistry import LoveMinistry
 from OuterParty import OuterParty
@@ -71,6 +71,18 @@ class BasicModel(mesa.Model):
     self.agentDistribution = agentDistribution
     self.numberOfInnerParty = 0
     self.ministryResourcesDistribution = ministryResourcesDistribution
+    # Assign probabilities to each action
+    self.outer_party_probabilities = {
+        RebelOuterPartyActions.KillProle: 0.1,       # 10% chance
+        RebelOuterPartyActions.KillOuterParty: 0.2,  # 20% chance
+        RebelOuterPartyActions.Misfunction: 0.7      # 70% chance
+    }
+
+    self.prole_probabilities = {
+        RebelProleActions.KillProle: 0.4,            # 40% chance
+        RebelProleActions.KillOuterParty: 0.1,       # 10% chance
+        RebelProleActions.Misfunction: 0.5          # 50% chance
+    }
     
     self.minFoodCRate = minFoodCRate
     self.maxFoodCRate = maxFoodCRate
@@ -220,7 +232,17 @@ class BasicModel(mesa.Model):
       Since the rebelled agent can do a varity of actions, and we decide to let the rebelled
       agent randomly choose one action at a time, since all the action also have possibilities
      """
-     pass
+     for rebelledOuterParty in self.rebeledAgents[Classes.OuterParty]:
+        # here we assign the functionality of rebelled behaviour to the agent via the rebel variable
+        outerPartyRebelActions = list(self.outer_party_probabilities.keys())
+        outerPartyRebelWeights = list(self.outer_party_probabilities.values())
+        rebelledOuterParty.rebel = random.choices(outerPartyRebelActions, weights=outerPartyRebelWeights, k=1)[0]
+     
+     for rebelledInnerParty in self.rebeledAgents[Classes.InnerParty]:
+        # here we assign the functionality of rebelled behaviour to the agent via the rebel variable
+        prolesRebelActions = list(self.prole_probabilities.keys())
+        prolesRebelWeights = list(self.prole_probabilities.values())
+        rebelledInnerParty.rebel = random.choices(prolesRebelActions, weights=prolesRebelWeights, k=1)[0]
 
 
   def initializeInnerParty(self):

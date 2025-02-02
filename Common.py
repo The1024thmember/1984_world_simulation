@@ -28,3 +28,4 @@ class RebelProleActions(Enum):
    KillProle = 1
    KillOuterParty = 2
    Misfunction = 3
+

@@ -23,7 +23,6 @@ class OuterParty(mesa.Agent):
       rebel action:
       - once there are more than n amount of rebel outerParty, random events will happen (low chance of kill outerParty, 
       very low chance of kill proles,  disfunction on ministry's duty, etc)
-
   """
   def __init__(self,
               model,
