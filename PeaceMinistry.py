@@ -1,4 +1,4 @@
-from Common import Classes
+from Common import Classes, RebelProleActions
 
 
 class PeaceMinistry():
@@ -31,14 +31,22 @@ class PeaceMinistry():
     """
       Collect weapons built by proles
     """
+    # generate weapon
     for each in self.proles:
-      self.weapons += each.weaponPRate
+      if each.rebel == RebelProleActions.Misfunction:
+        # produce much less weapon than normal
+        self.weapons=each.weaponPRate * 0.1
+      else:
+        self.weapons=each.foodPRate
 
-  def defendBombAttack(self):
+  def defendBombAttack(self, bomb):
     """
       Defend bomb attack based on the number of Weapons and the number of OuterParty
     """
-    pass
+    # Bomb attack
+    bomb.attack()
+    
+
 
   def getMetricks(self):
     """

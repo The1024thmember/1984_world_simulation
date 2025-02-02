@@ -22,14 +22,14 @@ class PlentyMinistry():
                outerParties, # a list of outer party that work for peace ministry
                nInnerParty, # number of inner party
                diffusionRate, # Percentage of food to distribute to neighbors
-               varianceThreshod, # Variance threshold to determine convergence
+               varianceThreshold, # Variance threshold to determine convergence
               ):
     self.proles = proles
     self.outerParties = outerParties
     self.nInnerParty = nInnerParty
     self.numberOfDiedAgents = 0
     self.diffusionRate = diffusionRate
-    self.varianceThreshod = varianceThreshod
+    self.varianceThreshold = varianceThreshold
     pass
 
   def generateAndDistributeFood(self, agentsSpot, gridSize):
@@ -41,7 +41,7 @@ class PlentyMinistry():
       Keep in mind that this function should take the number of OuterParty and rebel 
       and etc as input, as it impacts the food generation and distruibution process
     """
-    def diffuse():
+    def diffuse(variance):
       """
       Recursive diffusion process to ensure global low variance.
       Spreading is restricted to agentsPosition.
@@ -69,8 +69,8 @@ class PlentyMinistry():
           return new_grid
 
       # Check variance among y_positions
-      variance = np.var([new_grid[i, j] for i, j in agentsPosition])
-      if variance < self.varianceThreshod:
+      currentV = np.var([new_grid[i, j] for i, j in agentsPosition])
+      if currentV < variance:
           return new_grid  # Stop if variance is below threshold
       else:
           return diffuse(new_grid, agentsPosition)  # Recurse otherwise
@@ -90,8 +90,12 @@ class PlentyMinistry():
       else:
         foodGrid[each.pos[0]][each.pos[1]]=each.foodPRate
 
-    # food distruibution
-    distributed =  diffuse()
+    # food distruibution, take the number of rebelled outer party into account
+    for each in self.outerParties:
+      if each.rebel == RebelProleActions.Misfunction:
+        # the more rebelled outerParty, the higher value for varianceThreshold
+        variance += 2
+    distributed =  diffuse(variance)
 
     # allocate food to agents
     for [agent,_] in agentsPosition:

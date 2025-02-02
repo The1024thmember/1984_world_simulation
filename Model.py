@@ -203,12 +203,15 @@ class BasicModel(mesa.Model):
     self.peaceMinistry.collectWeapons()
 
     # Bomb attack
-    # 1. Casualty
-    # 2. Spread of sense of safety via network effect
+    # 1. Defend bomb attack
+    # 2. Calculate Casualty
+    # 3. Spread of sense of safety via network effect
+    self.peaceMinistry.defendBombAttack(self.bomb)
 
     # Food consumption
     # 1. Hunger
-    # 2. Spread of sense of hunger via network effect
+    # 2. Calculate Casualty
+    # 3. Spread of sense of hunger via network effect
 
     # Rebel spreading effect via network effect
 
