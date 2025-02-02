@@ -97,6 +97,7 @@ class BasicModel(mesa.Model):
     self.width = width
     self.height = height
     # The position that already has an agent on it
+    # eg: [[agent, (x,y)], [agent, (x,y)]] 
     self.spotTaken = []
     # The agents that died in current step
     self.diedAgent = {}
@@ -196,7 +197,7 @@ class BasicModel(mesa.Model):
     self.getRebelledAgentActivity()
 
     # Food production, the proles produces food, then get distruibuted
-    self.plentyMinistry.generateAndDistributeFood()
+    self.plentyMinistry.generateAndDistributeFood(self.spotTaken, gridSize = self.height)
 
     # Weapon production
     self.peaceMinistry.collectWeapons()
@@ -267,8 +268,8 @@ class BasicModel(mesa.Model):
         self.grid.place_agent(innerParty, (x, y))
         self.schedule.add(innerParty)
 
-        # Mark the spot as taken
-        self.spotTaken.append((x, y))
+        # Mark the spot as taken by the agent
+        self.spotTaken.append([innerParty, (x, y)])
   
 
   def initalizeOuterParty(self):
@@ -308,7 +309,7 @@ class BasicModel(mesa.Model):
         self.schedule.add(outerParty)
 
         # Mark the spot as taken
-        self.spotTaken.append((x, y))
+        self.spotTaken.append([outerParty, (x, y)])
 
   def initializeProles(self):
     # Initialize Proles
@@ -343,6 +344,12 @@ class BasicModel(mesa.Model):
 
         # put the proles into certain ministry
         self.ministryMembers[ministry][Classes.Proles].append(prole)
+
+        self.grid.place_agent(prole, (x, y))
+        self.schedule.add(prole)
+
+        # Mark the spot as taken
+        self.spotTaken.append([prole, (x, y)])
 
   def getFoodConsumeRate(self, minConsumption, maxConsumption):
     """
