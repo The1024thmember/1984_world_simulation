@@ -66,8 +66,9 @@ class Proles(mesa.Agent):
     
     remove from the grid, reduce the number Proles in corresponding ministry
   """
-  def maybe_die(self):
-    pass
+  def die(self):
+    self.model.grid.remove_agent(self)
+    self.model.schedule.remove(self)
 
   def step(self):
     pass

@@ -187,13 +187,19 @@ class BasicModel(mesa.Model):
     pass
 
 
-  """
-  Proles should do their production
-  OuterParty should fulfill their duty
-  InnerParty should fulfill their duty
-  Bomb should prepare to attack randomly
-  """
   def step(self):
+    """
+    Proles should do their production
+    OuterParty should fulfill their duty
+    InnerParty should fulfill their duty
+    Bomb should prepare to attack randomly
+
+    Be aware that all the death happened in this round will only take effect in the next round, 
+    as the InnerParty allocate resources based on percentage of member in self.ministryMembers
+    at the end of each step and self.ministryMembers updates the number of died agent during
+    the step process
+    """
+    
     # Get rebelled agent activity
     self.getRebelledAgentActivity()
 
@@ -203,11 +209,21 @@ class BasicModel(mesa.Model):
     # Weapon production
     self.peaceMinistry.collectWeapons()
 
-    # Bomb attack
+    # Bomb attack, it is a rare event
     # 1. Defend bomb attack
     # 2. Calculate Casualty
     # 3. Spread of sense of safety via network effect
-    self.peaceMinistry.defendBombAttack(self.bomb)
+    if random.randint(0,10)<2:
+      attackedLocation = self.peaceMinistry.defendBombAttack(self.bomb)
+      for pos in attackedLocation:
+        this_cell = self.grid.get_cell_list_contents(pos)
+        for agent in this_cell:
+          # need to ensure the agent is removed from the ministry as well
+          if isinstance(agent, Proles) or isinstance(agent, OuterParty) or isinstance(agent, InnerParty):
+            agent.die()
+            self.removeAgentFromSpot(agent)
+            self.removeAgentFromMinistry(agent)
+            self.diedAgent[CauseOfDeath.BombAttack].append(agent)
 
     # Food consumption
     # 1. Hunger
@@ -354,6 +370,33 @@ class BasicModel(mesa.Model):
 
         # Mark the spot as taken
         self.spotTaken.append([prole, (x, y)])
+
+  def removeAgentFromSpot(self, agent):
+     """
+      Remove the agent from spot
+     """
+     for i in range(len(self.spotTaken)):
+        if self.spotTaken[i][0] == agent:
+           break
+     self.spotTaken.pop(i)
+        
+
+  def removeAgentFromMinistry(self, agent):
+     """
+      Remove the agent from its working ministry, excpet for inner party
+     """
+     if isinstance(agent, InnerParty):
+        return
+     if isinstance(agent, Proles):
+        for i in range(len(self.ministryMembers[agent.ministry][Proles])):
+           if self.ministryMembers[agent.ministry][Proles][i] == agent:
+              break
+        self.ministryMembers[agent.ministry][Proles].pop(i)
+     elif isinstance(agent, OuterParty):
+        for i in range(len(self.ministryMembers[agent.ministry][OuterParty])):
+           if self.ministryMembers[agent.ministry][OuterParty][i] == agent:
+              break
+        self.ministryMembers[agent.ministry][OuterParty].pop(i)
 
   def getFoodConsumeRate(self, minConsumption, maxConsumption):
     """

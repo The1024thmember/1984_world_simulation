@@ -49,8 +49,9 @@ class OuterParty(mesa.Agent):
 
     remove from the grid, reduce the number OuterParty in corresponding minitry
   """
-  def maybe_die(self):
-    pass
+  def die(self):
+    self.model.grid.remove_agent(self)
+    self.model.schedule.remove(self)
 
   def step(self):
     pass

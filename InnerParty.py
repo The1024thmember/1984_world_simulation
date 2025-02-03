@@ -38,7 +38,9 @@ class InnerParty(mesa.Agent):
 
     remove from the grid, reduce the number of InnerParty in All ministries
   """
-  def maybe_die(self):
+  def die(self):
+    self.model.grid.remove_agent(self)
+    self.model.schedule.remove(self)
     pass
 
   """
