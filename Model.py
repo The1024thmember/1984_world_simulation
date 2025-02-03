@@ -29,7 +29,8 @@ class BasicModel(mesa.Model):
   def __init__(
       self,
       bombAttackFrequency, # bomb attack frequency
-      maxBombAttackImpactSize, # maximum bomb attack impact on its size
+      avgBombAttackImpactSize, # average bomb attack impact on its size
+      avgBombAttackIntensity, # average bomb attack intensity
       agentDistribution = {  # the different agent population distruibution
         Classes.Proles: 0.85,
         Classes.OuterParty: 0.13,
@@ -178,10 +179,10 @@ class BasicModel(mesa.Model):
     # Initialize bomb attack
     self.bomb = BombAttack(
        frequency = bombAttackFrequency, 
-       maxImpactSize = maxBombAttackImpactSize,
+       avgImpactSize = avgBombAttackImpactSize,
+       avgIntensity = avgBombAttackIntensity,
        width = self.width,
-       height = self.height
-    )
+       height = self.height)
 
     pass
 

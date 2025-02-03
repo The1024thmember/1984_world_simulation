@@ -1,3 +1,4 @@
+import random
 from Common import Classes, RebelProleActions
 
 
@@ -43,11 +44,51 @@ class PeaceMinistry():
     """
       Defend bomb attack based on the number of Weapons and the number of OuterParty
     """
-    # Bomb attack
-    bomb.attack()
-    
+    # Bomb attack, shuffle to ensure when apply weapon to defend, ensure randomness
+    affectedArea = bomb.attack()
+    random.shuffle(affectedArea) 
+    # Defending the bomb attack
+    # 1. The more outerparty there are, the more precision it is in predicting the center location and radius for bomb attack
+    # 2. The more weapon there are the higher probablity that the defend on each grid location will work
 
+    center_x, center_y, radius, intensity = bomb.historicalAttacks[-1]
+    # Step 1: Calculate precision based on outer party members
+    precision = 0
+    for each in self.outerParties:
+      if each.rebel != RebelProleActions.Misfunction:
+        precision += 0.14 # this is due to there can be 6 outerparty on peace ministry, if all of them are work their best, should be 85% of precision
 
+    # Step 2: Predict the attack center and radius using precision
+    predicted_center_x = center_x + random.randint(-int((1 - precision) * radius), int((1 - precision) * radius))
+    predicted_center_y = center_y + random.randint(-int((1 - precision) * radius), int((1 - precision) * radius))
+    predicted_radius = max(1, int(radius * precision))  # Higher precision reduces radius error
+
+    # Step 3: Identify the predicted area
+    predicted_area = []
+    for dx in range(-predicted_radius, predicted_radius + 1):
+        for dy in range(-predicted_radius, predicted_radius + 1):
+            if dx**2 + dy**2 <= predicted_radius**2:
+                predicted_x = predicted_center_x + dx
+                predicted_y = predicted_center_y + dy
+                if (predicted_x, predicted_y) in affectedArea:
+                    predicted_area.append((predicted_x, predicted_y))
+ 
+    # Step 4: Apply defense using weapons
+    defended_area = []
+    for (x, y) in predicted_area:
+        if self.weapons >= intensity:
+            # Each intensity weapons give a 60% chance to defend a location
+            if random.random() < 0.6:  # 60% success probability
+                defended_area.append((x, y))
+                affectedArea.remove((x, y))  # Successfully defended
+
+            # Weapons are consumed
+            self.weapons -= intensity
+
+    # Remaining affected area after defense
+    attackedLocation = affectedArea
+    return attackedLocation
+ 
   def getMetricks(self):
     """
       Collect the number of agents died because of bomb attack
