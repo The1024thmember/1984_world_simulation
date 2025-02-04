@@ -214,22 +214,38 @@ class BasicModel(mesa.Model):
     # 2. Calculate Casualty
     # 3. Spread of sense of safety via network effect
     if random.randint(0,10)<2:
+      # step 1: defend bomb attack
       attackedLocation = self.peaceMinistry.defendBombAttack(self.bomb)
       for pos in attackedLocation:
         this_cell = self.grid.get_cell_list_contents(pos)
         for agent in this_cell:
           # need to ensure the agent is removed from the ministry as well
           if isinstance(agent, Proles) or isinstance(agent, OuterParty) or isinstance(agent, InnerParty):
+            # step 2: calculate casualty
             agent.die()
             self.removeAgentFromSpot(agent)
             self.removeAgentFromMinistry(agent)
             self.diedAgent[CauseOfDeath.BombAttack].append(agent)
+            # step 3: spread sense of safety
+            self.spreadSenseOfSatefy(agent)
 
     # Food consumption
-    # 1. Hunger
+    # 1. Consume food
     # 2. Calculate Casualty
     # 3. Spread of sense of hunger via network effect
-
+    for agent, _ in self.spotTaken:
+      if agent.foodStock < agent.foodCRate:
+        # step 2: calculate casualty
+        agent.die()
+        self.removeAgentFromSpot(agent)
+        self.removeAgentFromMinistry(agent)
+        self.diedAgent[CauseOfDeath.Hunger].append(agent)
+        # step 3: spread sense of hunger
+        self.spreadSenseOfHunger(agent)
+      else:
+        # step 1: Consume food
+        agent.foodStock -= agent.foodCRate
+    
     # Rebel spreading effect via network effect
 
     # Collect metrics and inner party make decisions on whether to adjust resources allocation
@@ -370,6 +386,20 @@ class BasicModel(mesa.Model):
 
         # Mark the spot as taken
         self.spotTaken.append([prole, (x, y)])
+
+  def spreadSenseOfSatefy(self, agent):
+     """
+      Spread the sense of safety via network effect
+      Take account of truthMinistry to interfere with the spreading
+     """
+     pass
+
+  def spreadSenseOfHunger(self, agent):
+     """
+      Spread the sense of hunger via network effect
+      Take account of truthMinistry to interfere with the spreading
+     """
+     pass
 
   def removeAgentFromSpot(self, agent):
      """
