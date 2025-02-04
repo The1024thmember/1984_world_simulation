@@ -18,7 +18,7 @@ class Proles(mesa.Agent):
     - Have the potential of rebel based on its loyalty value
     rebel rule:
       - once rebel, spreading towards neighbour prole is for sure
-      - all forms of production rate goes to 0
+      - all forms of production rate dropps dramatically
       - chance of kill proles and very rare chance of kill outerParty
   """
   def __init__(self, 
@@ -55,6 +55,11 @@ class Proles(mesa.Agent):
   def initMaslowPyramid(self):
     pass
 
+  def rebelSpread(self):
+    """
+     Spread rebel by lowering neighbour's loyalty score
+    """
+    pass
 
   """
     Proles can die from five ways:

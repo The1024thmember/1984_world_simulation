@@ -37,6 +37,24 @@ class OuterParty(mesa.Agent):
               ministry # the ministry is worked in
               ):
     super().__init__(model)
+    self.pos = pos
+    self.loyalty = loyalty
+    self.alive = alive
+    self.foodCRate = foodCRate
+    self.foodStock = foodStock
+    self.senseOfHunger = senseOfHunger
+    self.senseOfSafety = senseOfSafety
+    self.rebel = rebel
+    self.ministry = ministry
+
+  def rebelSpread(self):
+    """
+     Spread rebel by lowering neighbour's loyalty score
+      - able to influence neighbour outerParty's loyalty score (randomly decide to influence or not)
+      - if neighbour outerParty have higher loyalty score, on influence will results in caught
+      - if neighbour outerParty have lower loyalty score, decrease the neighbour outerParty loyalty score
+      - the more neighbour is rebel, the more effective in decreasing low loyalty score neighbour outerParty's loyalty score
+    """
     pass
 
   """

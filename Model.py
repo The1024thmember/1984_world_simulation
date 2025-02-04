@@ -210,6 +210,9 @@ class BasicModel(mesa.Model):
     # Weapon production
     self.peaceMinistry.collectWeapons()
 
+    """
+    TODO - the below  bomb attack spreading and food consumption spreading can be put into agent's function
+    """
     # Bomb attack, it is a rare event
     # 1. Defend bomb attack
     # 2. Calculate Casualty
@@ -251,9 +254,15 @@ class BasicModel(mesa.Model):
         hungerImpact = max(0, 1 - (foodRatio / 3))*10
         agent.senseOfHunger += hungerImpact
     
-    # Rebel spreading effect via network effect
+    # Rebel spreading effect via network effect, monitored by love ministry
 
     # Truth ministry help in increasing loyalty score
+
+    # Rebelled agent take action to kill other agents
+
+    # Love ministry executes or transform caught rebelled agents
+
+    # Collect the rebelled agents
 
     # Collect metrics and inner party make decisions on whether to adjust resources allocation
     metrics = {}
