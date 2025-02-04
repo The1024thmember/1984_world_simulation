@@ -1,4 +1,5 @@
-from Common import Classes
+import random
+from Common import CauseOfDeath, Classes
 
 
 class TruthMinistry():
@@ -32,12 +33,15 @@ class TruthMinistry():
     """
     pass
 
-  def cutOffNegativeImpact(self):
+  def interfereNegativeImpact(self, cause):
     """
       Events like hunger and bomb attack can spread and decrease the loyalty number
       for neighbour agent, reduce the impact of such event on neighbouring agent
     """
-    pass
+    if cause == CauseOfDeath.Hunger:
+      return random.uniform(0.5, 1.0)
+    elif cause == CauseOfDeath.BombAttack:
+      return random.uniform(0.3, 0.8) 
 
   def getMetricks(self):
     """
