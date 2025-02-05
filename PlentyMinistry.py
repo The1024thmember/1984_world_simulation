@@ -32,6 +32,7 @@ class PlentyMinistry():
     self.varianceThreshold = varianceThreshold
     pass
 
+  # TODO - need to fix the agentSpot variable, maybe we don't need to record the (x,y) at all
   def generateAndDistributeFood(self, agentsSpot, gridSize):
     """
       Locate the proles location, generate food on this location

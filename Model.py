@@ -102,15 +102,15 @@ class BasicModel(mesa.Model):
     # eg: [[agent, (x,y)], [agent, (x,y)]] 
     self.spotTaken = []
     # The agents that died in current step
-    self.diedAgent = {}
-    for cause in CauseOfDeath:
-       self.diedAgent[cause.name] = []
+    # self.diedAgent = {}
+    # for cause in CauseOfDeath:
+    #    self.diedAgent[cause.name] = []
 
     # The rebelled agents
-    self.rebeledAgents = {
-       Classes.OuterParty:[],
-       Classes.Proles:[]
-    }
+    # self.rebeledAgents = {
+    #    Classes.OuterParty:[],
+    #    Classes.Proles:[]
+    # }
 
 
     # four ministry members
@@ -227,23 +227,24 @@ class BasicModel(mesa.Model):
           if isinstance(agent, Proles) or isinstance(agent, OuterParty) or isinstance(agent, InnerParty):
             # step 2: calculate casualty
             agent.die()
+            # TODO - ensure the remove agent from spot is called outside the for loop
             self.removeAgentFromSpot(agent)
             self.removeAgentFromMinistry(agent)
-            self.diedAgent[CauseOfDeath.BombAttack].append(agent)
+            # self.diedAgent[CauseOfDeath.BombAttack].append(agent)
             # step 3: spread sense of safety
             self.spreadSenseOfSatefy(agent)
 
-    # Food consumption
-    # 1. Consume food
-    # 2. Calculate Casualty
-    # 3. Spread of sense of hunger via network effect
-    for agent, _ in self.spotTaken:
+
+    for agent in self.spotTaken:
+      agent.consumeFood()
+    
       if agent.foodStock < agent.foodCRate:
         # step 2: calculate casualty
         agent.die()
+        # TODO - ensure the remove agent from spot is called outside the for loop
         self.removeAgentFromSpot(agent)
         self.removeAgentFromMinistry(agent)
-        self.diedAgent[CauseOfDeath.Hunger].append(agent)
+        # self.diedAgent[CauseOfDeath.Hunger].append(agent)
         # step 3: spread sense of hunger
         self.spreadSenseOfHunger(agent)
       else:
@@ -255,6 +256,9 @@ class BasicModel(mesa.Model):
         agent.senseOfHunger += hungerImpact
     
     # Rebel spreading effect via network effect, monitored by love ministry
+    for each in self.spotTaken:
+      if each.rebel:
+        each.rebelSpread()
 
     # Truth ministry help in increasing loyalty score
 
@@ -262,8 +266,12 @@ class BasicModel(mesa.Model):
 
     # Love ministry executes or transform caught rebelled agents
 
-    # Collect the rebelled agents
-
+    # Refresh the alive agent
+    for each in self.spotTaken:
+       if not each.alive:
+        self.removeAgentFromMinistry(agent)
+    self.spotTaken = [each for each in self.spotTaken if each[0].alive]
+    
     # Collect metrics and inner party make decisions on whether to adjust resources allocation
     metrics = {}
     metrics[Ministry.Plenty]=self.plentyMinistry.getMetricks()
@@ -285,18 +293,18 @@ class BasicModel(mesa.Model):
       Since the rebelled agent can do a varity of actions, and we decide to let the rebelled
       agent randomly choose one action at a time, since all the action also have possibilities
      """
-     for rebelledOuterParty in self.rebeledAgents[Classes.OuterParty]:
-        # here we assign the functionality of rebelled behaviour to the agent via the rebel variable
-        outerPartyRebelActions = list(self.outer_party_probabilities.keys())
-        outerPartyRebelWeights = list(self.outer_party_probabilities.values())
-        rebelledOuterParty.rebel = random.choices(outerPartyRebelActions, weights=outerPartyRebelWeights, k=1)[0]
-     
-     for rebelledInnerParty in self.rebeledAgents[Classes.InnerParty]:
-        # here we assign the functionality of rebelled behaviour to the agent via the rebel variable
-        prolesRebelActions = list(self.prole_probabilities.keys())
-        prolesRebelWeights = list(self.prole_probabilities.values())
-        rebelledInnerParty.rebel = random.choices(prolesRebelActions, weights=prolesRebelWeights, k=1)[0]
-
+     for each in self.spotTaken:
+        if each.rebel:
+          if isinstance(each, OuterParty):
+            # here we assign the functionality of rebelled behaviour to the agent via the rebel variable
+            outerPartyRebelActions = list(self.outer_party_probabilities.keys())
+            outerPartyRebelWeights = list(self.outer_party_probabilities.values())
+            each.rebel = random.choices(outerPartyRebelActions, weights=outerPartyRebelWeights, k=1)[0]
+          elif isinstance(each, Proles):
+            # here we assign the functionality of rebelled behaviour to the agent via the rebel variable
+            prolesRebelActions = list(self.prole_probabilities.keys())
+            prolesRebelWeights = list(self.prole_probabilities.values())
+            each.rebel = random.choices(prolesRebelActions, weights=prolesRebelWeights, k=1)[0]
 
   def initializeInnerParty(self):
     # Initialize InnerParty
@@ -306,6 +314,7 @@ class BasicModel(mesa.Model):
         while True:
             x = self.random.randrange(self.width)
             y = self.random.randrange(self.height)
+            # TODO - fix this, spotTaken stores all the agent
             if (x, y) not in self.spotTaken:  # Ensure the spot is not already taken
                 break  # Exit the loop when an empty spot is found
 
@@ -320,6 +329,7 @@ class BasicModel(mesa.Model):
         self.grid.place_agent(innerParty, (x, y))
         self.schedule.add(innerParty)
 
+        # TODO - fix this, No need to store the position, agent info contain the position
         # Mark the spot as taken by the agent
         self.spotTaken.append([innerParty, (x, y)])
   
@@ -334,6 +344,7 @@ class BasicModel(mesa.Model):
         while True:
             x = self.random.randrange(self.width)
             y = self.random.randrange(self.height)
+            # TODO - fix this, spotTaken stores all the agent
             if (x, y) not in self.spotTaken:  # Ensure the spot is not already taken
                 break  # Exit the loop when an empty spot is found
 
@@ -360,6 +371,7 @@ class BasicModel(mesa.Model):
         self.grid.place_agent(outerParty, (x, y))
         self.schedule.add(outerParty)
 
+        # TODO - fix this, No need to store the position, agent info contain the position
         # Mark the spot as taken
         self.spotTaken.append([outerParty, (x, y)])
 
@@ -373,6 +385,7 @@ class BasicModel(mesa.Model):
         while True:
             x = self.random.randrange(self.width)
             y = self.random.randrange(self.height)
+            # TODO - fix this, spotTaken stores all the agent
             if (x, y) not in self.spotTaken:  # Ensure the spot is not already taken
                 break  # Exit the loop when an empty spot is found
 
@@ -400,6 +413,8 @@ class BasicModel(mesa.Model):
         self.grid.place_agent(prole, (x, y))
         self.schedule.add(prole)
 
+
+        # TODO - fix this, No need to store the position, agent info contain the position
         # Mark the spot as taken
         self.spotTaken.append([prole, (x, y)])
 
@@ -510,14 +525,14 @@ class BasicModel(mesa.Model):
         neighbors = []
         for other in self.getAllAgents():
             if other != agent:
-                distance = self.calculateDistance(agent, other)
+                distance = calculateDistance(agent, other)
                 if distance <= rangeLimit:
                     neighbors.append(other)
         return neighbors
 
-  def calculateDistance(self, agent1, agent2):
-      """Calculate the Euclidean distance between two agents."""
-      return math.sqrt((agent1.x - agent2.x) ** 2 + (agent1.y - agent2.y) ** 2)
+def calculateDistance(agent1, agent2):
+    """Calculate the Euclidean distance between two agents."""
+    return math.sqrt((agent1.x - agent2.x) ** 2 + (agent1.y - agent2.y) ** 2)
 
 
 def get_ministry_distribution(ministryResourcesDistribution, class_type):
