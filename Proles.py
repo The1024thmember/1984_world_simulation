@@ -52,12 +52,6 @@ class Proles(mesa.Agent):
     self.rebel = rebel
     self.ministry = ministry
 
-  """
-    Initialize MaslowPyramid
-  """
-  def initMaslowPyramid(self):
-    pass
-
   def rebelSpread(self):
     """
      Spread rebel by lowering neighbour's loyalty score
@@ -74,10 +68,15 @@ class Proles(mesa.Agent):
     
     remove from the grid, reduce the number Proles in corresponding ministry
   """
-  def die(self):
+  def die(self, cause):
     self.alive = False
     self.model.grid.remove_agent(self)
     self.model.schedule.remove(self)
+    # Based on the died cause, trigger the following effect
+    if cause == CauseOfDeath.Hunger:
+      self.spreadSenseOfHunger()
+    elif cause == CauseOfDeath.BombAttack:
+       self.spreadSenseOfSatefy()
 
   def consumeFood(self):
     """
@@ -87,11 +86,8 @@ class Proles(mesa.Agent):
     # 3. Spread of sense of hunger via network effect
     """
     if self.foodStock < self.foodCRate:
-        # step 2: calculate casualty
-        self.die()
-        self.diedAgent[CauseOfDeath.Hunger].append(self)
-        # step 3: spread sense of hunger
-        self.spreadSenseOfHunger()
+        # step 2,3 : calculate casualty &  Spread of sense of hunger via network effect
+        self.die(CauseOfDeath.Hunger)
     else:
         # step 1: Consume food
         self.foodStock -= self.foodCRate
@@ -100,19 +96,15 @@ class Proles(mesa.Agent):
         hungerImpact = max(0, 1 - (foodRatio / 3))*10
         self.senseOfHunger += hungerImpact
 
-  def step(self):
-    pass
-
-
-  def getNeighbors(self, agent, rangeLimit):
+  def getNeighbors(self, rangeLimit):
         """
         Get all neighboring agents within a given range.
         Assumes there is a function `getAllAgents()` that returns all agents in the grid.
         """
         neighbors = []
         for other in self.getAllAgents():
-            if other != agent:
-                distance = calculateDistance(agent, other)
+            if other != self:
+                distance = calculateDistance(self, other)
                 if distance <= rangeLimit:
                     neighbors.append(other)
         return neighbors
@@ -137,7 +129,7 @@ class Proles(mesa.Agent):
           impact = max(0, hungerImpact * (1 - (distance / self.spreadRange)))
 
           # TruthMinistry interference
-          interference = self.truthMinistry.interfereNegativeImpact("hunger")
+          interference = self.model.truthMinistry.interfereNegativeImpact(CauseOfDeath.Hunger)
 
           # Apply the spread effect
           effectiveImpact = max(0, min(1, impact * interference))*10
@@ -146,4 +138,30 @@ class Proles(mesa.Agent):
           if effectiveImpact > 2:
             neighbor.senseOfHunger = min(100, max(1, neighbor.senseOfHunger + effectiveImpact))
 
+  def spreadSenseOfSatefy(self):
+    """
+      Spread the sense of safety via network effect
+      Take account of truthMinistry to interfere with the spreading
+    """
+    # Get neighbors within the spreading range
+    neighbors = self.getNeighbors(self.spreadRange)
+
+    for neighbor in neighbors:
+        if not neighbor.rebel: # there is no point of updating rebeled agent
+          # Calculate distance decay effect (weaker impact as distance increases)
+          distance = self.calculateDistance(self, neighbor)
+          impact = max(0, 1 - (distance / self.spreadRange))  # Normalized impact
+
+          # TruthMinistry interference (random fluctuation)
+          interference = self.model.truthMinistry.interfereNegativeImpact(CauseOfDeath.BombAttack)
+
+          # Apply the spread effect
+          effectiveImpact = max(0, min(1, impact * interference))* 10  
+
+          # Update neighbor’s sense of safety only if the threshold is met
+          if effectiveImpact > 2:  # Ensures a meaningful spread
+            neighbor.senseOfSafety = min(100, max(1, neighbor.senseOfSafety + effectiveImpact))
+  
+  def step(self):
+    pass
 

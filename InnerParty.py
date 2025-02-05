@@ -39,9 +39,17 @@ class InnerParty(mesa.Agent):
     remove from the grid, reduce the number of InnerParty in All ministries
   """
   def die(self):
+    self.alive = False
     self.model.grid.remove_agent(self)
     self.model.schedule.remove(self)
-    pass
+
+  def consumeFood(self):
+    """
+    # Food consumption
+    # 1. Consume food
+    """    
+    if self.foodStock < self.foodCRate:
+      self.die()
 
   """
     Here we use class method, since the function execution is on the InnerParty level

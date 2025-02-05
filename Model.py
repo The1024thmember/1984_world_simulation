@@ -226,34 +226,11 @@ class BasicModel(mesa.Model):
           # need to ensure the agent is removed from the ministry as well
           if isinstance(agent, Proles) or isinstance(agent, OuterParty) or isinstance(agent, InnerParty):
             # step 2: calculate casualty
-            agent.die()
-            # TODO - ensure the remove agent from spot is called outside the for loop
-            self.removeAgentFromSpot(agent)
-            self.removeAgentFromMinistry(agent)
-            # self.diedAgent[CauseOfDeath.BombAttack].append(agent)
-            # step 3: spread sense of safety
-            self.spreadSenseOfSatefy(agent)
+            agent.die(CauseOfDeath.BombAttack)
 
-
+    # Consume food
     for agent in self.spotTaken:
       agent.consumeFood()
-    
-      if agent.foodStock < agent.foodCRate:
-        # step 2: calculate casualty
-        agent.die()
-        # TODO - ensure the remove agent from spot is called outside the for loop
-        self.removeAgentFromSpot(agent)
-        self.removeAgentFromMinistry(agent)
-        # self.diedAgent[CauseOfDeath.Hunger].append(agent)
-        # step 3: spread sense of hunger
-        self.spreadSenseOfHunger(agent)
-      else:
-        # step 1: Consume food
-        agent.foodStock -= agent.foodCRate
-        # When food stock is lower than certain ratio, the sense of hunger will kick in
-        foodRatio = agent.foodStock / max(1, agent.foodCRate) 
-        hungerImpact = max(0, 1 - (foodRatio / 3))*10
-        agent.senseOfHunger += hungerImpact
     
     # Rebel spreading effect via network effect, monitored by love ministry
     for each in self.spotTaken:
@@ -273,6 +250,7 @@ class BasicModel(mesa.Model):
     self.spotTaken = [each for each in self.spotTaken if each[0].alive]
     
     # Collect metrics and inner party make decisions on whether to adjust resources allocation
+    # We assume that the agent will still perform their job during the step when they were dead
     metrics = {}
     metrics[Ministry.Plenty]=self.plentyMinistry.getMetricks()
     metrics[Ministry.Peace]=self.peaceMinistry.getMetricks()
@@ -413,75 +391,10 @@ class BasicModel(mesa.Model):
         self.grid.place_agent(prole, (x, y))
         self.schedule.add(prole)
 
-
         # TODO - fix this, No need to store the position, agent info contain the position
         # Mark the spot as taken
         self.spotTaken.append([prole, (x, y)])
-
-  def spreadSenseOfSatefy(self, agent):
-    """
-      Spread the sense of safety via network effect
-      Take account of truthMinistry to interfere with the spreading
-    """
-    # Get neighbors within the spreading range
-    neighbors = self.getNeighbors(agent, self.spreadRange)
-
-    for neighbor in neighbors:
-        if not neighbor.rebel: # there is no point of updating rebeled agent
-          # Calculate distance decay effect (weaker impact as distance increases)
-          distance = self.calculateDistance(agent, neighbor)
-          impact = max(0, 1 - (distance / self.spreadRange))  # Normalized impact
-
-          # TruthMinistry interference (random fluctuation)
-          interference = self.truthMinistry.interfereNegativeImpact()
-
-          # Apply the spread effect
-          effectiveImpact = max(0, min(1, impact * interference))* 10  
-
-          # Update neighbor’s sense of safety only if the threshold is met
-          if effectiveImpact > 2:  # Ensures a meaningful spread
-            neighbor.senseOfSafety = min(100, max(1, neighbor.senseOfSafety + effectiveImpact))
-
-
-  def spreadSenseOfHunger(self, agent):
-    """
-      Spread the sense of hunger via network effect
-      Take account of truthMinistry to interfere with the spreading
-    """
-    # Get neighbors within the spreading range
-    neighbors = self.getNeighbors(agent, self.spreadRange)
-
-    for neighbor in neighbors:
-        if not neighbor.rebel: # there is no point of updating rebeled agent
-          # Hunger impact increases if food stock is low
-          foodRatio = neighbor.foodStock / max(1, neighbor.foodCRate) 
-          hungerImpact = max(0, 1 - (foodRatio / 5))
-
-          # Distance decay effect
-          distance = self.calculateDistance(agent, neighbor)
-          impact = max(0, hungerImpact * (1 - (distance / self.spreadRange)))
-
-          # TruthMinistry interference
-          interference = self.truthMinistry.interfereNegativeImpact("hunger")
-
-          # Apply the spread effect
-          effectiveImpact = max(0, min(1, impact * interference))*10
-
-          # Update neighbor’s sense of hunger if above threshold
-          if effectiveImpact > 2:
-            neighbor.senseOfHunger = min(100, max(1, neighbor.senseOfHunger + effectiveImpact))
-
-
-  def removeAgentFromSpot(self, agent):
-     """
-      Remove the agent from spot
-     """
-     for i in range(len(self.spotTaken)):
-        if self.spotTaken[i][0] == agent:
-           break
-     self.spotTaken.pop(i)
         
-
   def removeAgentFromMinistry(self, agent):
      """
       Remove the agent from its working ministry, excpet for inner party
@@ -516,23 +429,6 @@ class BasicModel(mesa.Model):
     Return a normal distruibution sampled weapon production rate
     """
     return self.random.uniform(minProduction, maxProduction+1)
-
-  def getNeighbors(self, agent, rangeLimit):
-        """
-        Get all neighboring agents within a given range.
-        Assumes there is a function `getAllAgents()` that returns all agents in the grid.
-        """
-        neighbors = []
-        for other in self.getAllAgents():
-            if other != agent:
-                distance = calculateDistance(agent, other)
-                if distance <= rangeLimit:
-                    neighbors.append(other)
-        return neighbors
-
-def calculateDistance(agent1, agent2):
-    """Calculate the Euclidean distance between two agents."""
-    return math.sqrt((agent1.x - agent2.x) ** 2 + (agent1.y - agent2.y) ** 2)
 
 
 def get_ministry_distribution(ministryResourcesDistribution, class_type):
