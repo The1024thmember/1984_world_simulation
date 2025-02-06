@@ -76,6 +76,7 @@ The equation:
 $$ P_{\text{spread}} = 1 - e^{-\alpha (1 - \text{loyalty})} $$
 
 is an **exponential growth function** that determines the probability of rebellion spreading based on **loyalty** and a **scaling factor** `α`.
+<img src="https://github.com/user-attachments/assets/51506273-c945-474e-919a-d6cf500884f2" width="500">
 
 #####  What Happens When `α` Increases?
 
