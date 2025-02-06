@@ -53,7 +53,7 @@ class Proles(mesa.Agent):
     self.weaponPRate = weaponPRate
     self.rebel = rebel
     self.ministry = ministry
-    self.alpha = 3 # Controls how sharply loyalty impacts spread probability
+    self.alpha = 1 # Controls how sharply loyalty impacts spread probability
 
   def calculateLoyalty(self):
      pass
