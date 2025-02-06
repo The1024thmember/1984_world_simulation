@@ -1,8 +1,10 @@
 ### Mesa version = 3.0.3
+import math
+import random
 import mesa
 import warnings
 
-from Common import CauseOfDeath
+from Common import CauseOfDeath, Classes
 from Model import calculateDistance
 
 # Suppress all UserWarnings, there are some UserWarning and DeprecationWarning
@@ -49,6 +51,10 @@ class OuterParty(mesa.Agent):
     self.senseOfSafety = senseOfSafety
     self.rebel = rebel
     self.ministry = ministry
+    self.alpha = 5 # Controls how sharply loyalty impacts spread probability
+
+  def calculateLoyalty(self):
+     pass
 
   def rebelSpread(self):
     """
@@ -58,10 +64,29 @@ class OuterParty(mesa.Agent):
       - if neighbour outerParty have lower loyalty score, decrease the neighbour outerParty loyalty score
       - the more neighbour is rebel, the more effective in decreasing low loyalty score neighbour outerParty's loyalty score
     """
-    pass
+    # apply love ministry's monitoring
+    if random.random() < self.model.loveMinistry.monitor(Classes.OuterParty):
+       self.model.loveMinistry.rebelQueue.append(self)
 
+    # move around
+    new_x, new_y = self.model.findSpot()
+    self.model.releaseSpot(self.pos)
+    self.pos = (new_x, new_y)
 
-         
+    # get the neighbour in the new location
+    neighbors = self.get_neighbors()
+
+    # spread rebel only when there is lower loyalty outerParty as neighbour
+    for neighbor in neighbors:
+      if not neighbor.is_rebel and isinstance(neighbor, Classes.OuterParty):
+        loyalty_factor = (100 - neighbor.loyalty)/100 
+        if loyalty_factor > 0.4:
+          suppression = self.model.loveMinistry.interfereRebellion(Classes.OuterParty) if random.randint(0,10) > 5 else 1
+          spread_probability = (1 - math.exp(-self.alpha * loyalty_factor)) * suppression        
+          if random.random() < spread_probability:
+            # decrease loyalty score
+            neighbor.loyalty -= 20           
+            
   """
     OuterParty can die from 3 ways:
     - bomb attack

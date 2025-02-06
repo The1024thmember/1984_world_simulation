@@ -42,7 +42,7 @@ class TruthMinistry():
       return random.uniform(0.5, 1.0)
     elif cause == CauseOfDeath.BombAttack:
       return random.uniform(0.3, 0.8) 
-
+    
   def getMetricks(self):
     """
       Collect the number of agents transformed to rebel

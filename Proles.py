@@ -1,10 +1,12 @@
 
 
 ### Mesa version = 3.0.3
+import math
+import random
 import mesa
 import warnings
 
-from Common import CauseOfDeath
+from Common import CauseOfDeath, Classes
 from Model import calculateDistance
 
 # Suppress all UserWarnings, there are some UserWarning and DeprecationWarning
@@ -51,12 +53,33 @@ class Proles(mesa.Agent):
     self.weaponPRate = weaponPRate
     self.rebel = rebel
     self.ministry = ministry
+    self.alpha = 3 # Controls how sharply loyalty impacts spread probability
 
+  def calculateLoyalty(self):
+     pass
+  
   def rebelSpread(self):
     """
      Spread rebel by lowering neighbour's loyalty score
+     Little chance the rebelled prole will be caught by Love ministry
+     The higher the neighbour's loyalty score, the lower chance they get affected
     """
-    pass
+    neighbors = self.get_neighbors()
+    
+    # apply love ministry's monitoring
+    if random.random() < self.model.loveMinistry.monitor(Classes.Prole):
+       self.model.loveMinistry.rebelQueue.append(self)
+
+    for neighbor in neighbors:
+      if not neighbor.is_rebel and isinstance(neighbor, Classes.Proles):
+        # Compute spread probability (non-linear)
+        loyalty_factor = (100 - neighbor.loyalty)/100  # Lower loyalty = Higher chance
+        # apply love ministry's rebel supression randomly
+        suppression = self.model.loveMinistry.interfereRebellion(Classes.Prole) if random.randint(0,10) > 5 else 1
+        spread_probability = (1 - math.exp(-self.alpha * loyalty_factor)) * suppression        
+        if random.random() < spread_probability:
+          # dreacse loyalty score
+          neighbor.loyalty -= 10
 
   """
     Proles can die from five ways:

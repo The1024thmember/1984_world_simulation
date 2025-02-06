@@ -29,11 +29,17 @@ class LoveMinistry():
     self.numberOfQueuedRebelledAgents = 0
     pass
 
-  def antiRebelSpread(self):
-    """
-     Stop the spread of rebel between proles and between outerparties
-    """
-    pass
+  def interfereRebellion(self, agentType):
+    if agentType == Classes.OuterParty:
+      return 0.9 # almost no suppression on rebel spreading
+    elif agentType == Classes.Proles:
+      return 0.3 # quite high suppression on rebel spreading
+
+  def monitor(self, agentType):
+    if agentType == Classes.OuterParty:
+      return 0.7 # sharp monitoring
+    elif agentType == Classes.Proles:
+      return 0.2 # loose monitoring
 
   def transformAgent(self):
     """

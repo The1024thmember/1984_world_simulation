@@ -71,3 +71,26 @@ The ministry of truth generates information
 | **Ministry of Plenty** | i: uses labour for food production<br><br>o: allocate food to prole                      | i: ensure ministry of plenty's normal function <br><br>o: allocate food to Outer party<br><br>                                                                                        | i: need decision from inner party on resources allocation<br><br>o: allocate food to inner party<br>              |
 
 
+#### The rebel spreading mechanism:
+The equation:
+$$ P_{\text{spread}} = 1 - e^{-\alpha (1 - \text{loyalty})} $$
+
+is an **exponential growth function** that determines the probability of rebellion spreading based on **loyalty** and a **scaling factor** `α`.
+
+#####  What Happens When `α` Increases?
+
+`α` (alpha) is a **scaling factor** that controls how sharply `P_spread` increases as **loyalty decreases**.
+
+1. **Higher `α` Means More Aggressive Spread**
+    
+    - The probability of spreading rebellion **increases faster** for low-loyalty agents.
+    - Even agents with moderate loyalty will have a much higher chance of rebelling.
+2. **Loyalty Has Less Buffer**
+    
+    - With a **low α**, only **very low-loyalty** agents are at risk of rebelling.
+    - With a **high α**, even **moderate-loyalty** agents can rebel easily.
+	
+#####  What does it mean in the model:
+
+1. For prole, a lower alpha value has been used, since prole are less educated and less active in their thought, the rebel can only spread when they are quite unhappy with their environment
+2. For Outer party, a higher alpha value has been used due to their work nature, their "double thought" and their experience in how the government works in mind controlling, so they are quite easy to be influenced with new idea

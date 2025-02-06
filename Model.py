@@ -98,9 +98,13 @@ class BasicModel(mesa.Model):
     # Initiate width and height og the sugar space
     self.width = width
     self.height = height
-    # The position that already has an agent on it
-    # eg: [[agent, (x,y)], [agent, (x,y)]] 
+    # All the agents
     self.spotTaken = []
+
+    # avaliable spots for agents 
+    self.available_spots = [(x, y) for x in range(width) for y in range(height)]  # Pre-generate all (x, y)
+    random.shuffle(self.available_spots)
+    
     # The agents that died in current step
     # self.diedAgent = {}
     # for cause in CauseOfDeath:
@@ -283,14 +287,7 @@ class BasicModel(mesa.Model):
     self.numberOfInnerParty = self.agentDistribution[Classes.InnerParty]*self.initial_population
     for i in range(self.numberOfInnerParty):
         # Find a unique spot for the InnerParty agent
-        while True:
-            x = self.random.randrange(self.width)
-            y = self.random.randrange(self.height)
-            for agent in self.spotTaken:
-               if agent.pos == (x,y):
-                  break
-            else:
-               break
+        x,y = self.findSpot()
 
         # Create and place the InnerParty agent
         innerParty = InnerParty(
@@ -314,16 +311,8 @@ class BasicModel(mesa.Model):
     
     for i in range(numberOfOuterParty):
         # Find a unique spot for the OuterParty agent
-        while True:
-            x = self.random.randrange(self.width)
-            y = self.random.randrange(self.height)
-            for agent in self.spotTaken:
-               if agent.pos == (x,y):
-                  break
-            else:
-               break
+        x,y = self.findSpot()
 
-        
         # get the ministry for outer party
         ministry = get_Ministry_for_outer_party_and_prole(i, outerPartyMinistryDistribution)
 
@@ -356,14 +345,7 @@ class BasicModel(mesa.Model):
 
     for i in range(numberOfProles):
         # Find a unique spot for the Prole agent
-        while True:
-            x = self.random.randrange(self.width)
-            y = self.random.randrange(self.height)
-            for agent in self.spotTaken:
-               if agent.pos == (x,y):
-                  break
-            else:
-               break
+        x,y = self.findSpot()
 
         ministry = get_Ministry_for_outer_party_and_prole(i, prolesMinistryDistribution)
        
@@ -427,6 +409,19 @@ class BasicModel(mesa.Model):
     """
     return self.random.uniform(minProduction, maxProduction+1)
 
+  def findSpot(self):
+    """ Efficiently finds a free (x, y) location by removing from the pre-generated list. """
+    if not self.available_spots:
+        raise ValueError("No available spots left on the grid!")  # Handle full grid scenario
+    
+    new_spot = self.available_spots.pop()  # Take a random available spot
+    return new_spot
+    
+  def releaseSpot(self, pos):
+    if pos not in self.available_spots:
+        self.available_spots.append(pos)
+    else:
+      raise ValueError("Release spot failed, spot already exist")
 
 def get_ministry_distribution(ministryResourcesDistribution, class_type):
     """
