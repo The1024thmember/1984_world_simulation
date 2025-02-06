@@ -185,9 +185,6 @@ class BasicModel(mesa.Model):
        width = self.width,
        height = self.height)
 
-    pass
-
-
   def step(self):
     """
     Proles should do their production
@@ -210,9 +207,6 @@ class BasicModel(mesa.Model):
     # Weapon production
     self.peaceMinistry.collectWeapons()
 
-    """
-    TODO - the below  bomb attack spreading and food consumption spreading can be put into agent's function
-    """
     # Bomb attack, it is a rare event
     # 1. Defend bomb attack
     # 2. Calculate Casualty
@@ -292,9 +286,11 @@ class BasicModel(mesa.Model):
         while True:
             x = self.random.randrange(self.width)
             y = self.random.randrange(self.height)
-            # TODO - fix this, spotTaken stores all the agent
-            if (x, y) not in self.spotTaken:  # Ensure the spot is not already taken
-                break  # Exit the loop when an empty spot is found
+            for agent in self.spotTaken:
+               if agent.pos == (x,y):
+                  break
+            else:
+               break
 
         # Create and place the InnerParty agent
         innerParty = InnerParty(
@@ -307,9 +303,8 @@ class BasicModel(mesa.Model):
         self.grid.place_agent(innerParty, (x, y))
         self.schedule.add(innerParty)
 
-        # TODO - fix this, No need to store the position, agent info contain the position
         # Mark the spot as taken by the agent
-        self.spotTaken.append([innerParty, (x, y)])
+        self.spotTaken.append(innerParty)
   
 
   def initalizeOuterParty(self):
@@ -322,9 +317,11 @@ class BasicModel(mesa.Model):
         while True:
             x = self.random.randrange(self.width)
             y = self.random.randrange(self.height)
-            # TODO - fix this, spotTaken stores all the agent
-            if (x, y) not in self.spotTaken:  # Ensure the spot is not already taken
-                break  # Exit the loop when an empty spot is found
+            for agent in self.spotTaken:
+               if agent.pos == (x,y):
+                  break
+            else:
+               break
 
         
         # get the ministry for outer party
@@ -349,9 +346,8 @@ class BasicModel(mesa.Model):
         self.grid.place_agent(outerParty, (x, y))
         self.schedule.add(outerParty)
 
-        # TODO - fix this, No need to store the position, agent info contain the position
         # Mark the spot as taken
-        self.spotTaken.append([outerParty, (x, y)])
+        self.spotTaken.append(outerParty)
 
   def initializeProles(self):
     # Initialize Proles
@@ -363,9 +359,11 @@ class BasicModel(mesa.Model):
         while True:
             x = self.random.randrange(self.width)
             y = self.random.randrange(self.height)
-            # TODO - fix this, spotTaken stores all the agent
-            if (x, y) not in self.spotTaken:  # Ensure the spot is not already taken
-                break  # Exit the loop when an empty spot is found
+            for agent in self.spotTaken:
+               if agent.pos == (x,y):
+                  break
+            else:
+               break
 
         ministry = get_Ministry_for_outer_party_and_prole(i, prolesMinistryDistribution)
        
@@ -391,10 +389,9 @@ class BasicModel(mesa.Model):
         self.grid.place_agent(prole, (x, y))
         self.schedule.add(prole)
 
-        # TODO - fix this, No need to store the position, agent info contain the position
         # Mark the spot as taken
-        self.spotTaken.append([prole, (x, y)])
-        
+        self.spotTaken.append(prole)
+
   def removeAgentFromMinistry(self, agent):
      """
       Remove the agent from its working ministry, excpet for inner party
