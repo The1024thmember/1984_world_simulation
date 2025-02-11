@@ -25,13 +25,19 @@ class TruthMinistry():
     self.outerParties = outerParties
     self.nInnerParty = nInnerParty
     self.numberOfTransformedRebelledAgents = 0
-    pass
+    self.proleLoyaltyScoreIncrease = 10
+    self.outerPartiesLoyaltyScoreIncrease = 10
 
-  def increaseLoyaltyScore(self):
+  def increaseLoyaltyScore(self, agents):
     """
-      Increase loyalty score for every agent by n
+      Increase loyalty score for every agent
     """
-    pass
+    for agent in agents:
+      if not agent.rebel:
+        if isinstance(agent, Classes.OuterParty):
+          agent.loyalty += random.uniform(self.outerPartiesLoyaltyScoreIncrease*0.5, self.outerPartiesLoyaltyScoreIncrease)
+        elif isinstance(agent, Classes.Proles):
+          agent.loyalty += random.uniform(self.proleLoyaltyScoreIncrease*0.8, self.proleLoyaltyScoreIncrease)
 
   def interfereNegativeImpact(self, cause):
     """

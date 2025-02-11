@@ -235,11 +235,27 @@ class BasicModel(mesa.Model):
       if each.rebel:
         each.rebelSpread()
 
+    # Calculate the loyalty score for every agent, the loyalty is the combination of sense of hunger and sense of safety
+    for each in self.spotTaken:
+      if isinstance(each, Classes.OuterParty) or isinstance(each, Classes.InnerParty):
+         each.loyalty = each.senseOfHunger + each.senseOfSatefy
+
     # Truth ministry help in increasing loyalty score
+    self.truthMinistry.increaseLoyaltyScore(self.spotTaken)
 
     # Rebelled agent take action to kill other agents
-
+    for each in self.spotTaken:
+      if each.rebel == RebelProleActions.KillOuterParty:
+         pass
+      elif each.rebel == RebelProleActions.KillProle:
+         pass
+      elif each.rebel == RebelOuterPartyActions.KillOuterParty:
+         pass
+      elif each.rebel == RebelOuterPartyActions.KillProle:
+         pass
+         
     # Love ministry executes or transform caught rebelled agents
+    self.loveMinistry.processRebelCase()
 
     # Refresh the alive agent
     for each in self.spotTaken:

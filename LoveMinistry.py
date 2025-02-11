@@ -55,10 +55,12 @@ class LoveMinistry():
 
   def processRebelCase(self):
     """
-      FIFO get n agent from rebel queue, n depends on the number of outerParty in PeaceMinistry
+      FIFO get n agent from rebel queue, n depends on the number of outerParty in LoveMinistry
       Decide to transform outerParty agent or execute outerParty agent
       Execute proles
     """
+    pass
+
 
   def getMetricks(self):
     """
