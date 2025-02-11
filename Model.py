@@ -55,7 +55,7 @@ class BasicModel(mesa.Model):
       },
       width = 17, # we want to ensure population will not fill the space, since the outerparty can move around 
       height = 17, 
-      initial_population = 200, # initial population
+      initialPopulation = 200, # initial population
       initialFoodStock = 3, # the initial food that every agent has
       minFoodCRate = 1,
       maxFoodCRate = 3,
@@ -69,7 +69,7 @@ class BasicModel(mesa.Model):
     # Initialize a random number generator
     self.random = random.Random()
 
-    self.initial_population = initial_population
+    self.initialPopulation = initialPopulation
     self.agentDistribution = agentDistribution
     self.numberOfInnerParty = 0
     self.ministryResourcesDistribution = ministryResourcesDistribution
@@ -151,7 +151,7 @@ class BasicModel(mesa.Model):
     # Scheduler
     self.schedule = mesa.time.RandomActivationByType(self)
 
-    self.initial_population = initial_population
+    self.initialPopulation = initialPopulation
 
     # Initialize agents
     self.initializeInnerParty()
@@ -201,7 +201,12 @@ class BasicModel(mesa.Model):
     at the end of each step and self.ministryMembers updates the number of died agent during
     the step process
     """
-    
+
+    # Determine if agent is rebel or not
+    for each in self.spotTaken:
+      if not each.rebel and (isinstance(each, OuterParty) or isinstance(each, InnerParty)):
+        each.rebel = each.loyalty < 50
+
     # Get rebelled agent activity
     self.getRebelledAgentActivity()
 
@@ -235,10 +240,12 @@ class BasicModel(mesa.Model):
       if each.rebel:
         each.rebelSpread()
 
-    # Calculate the loyalty score for every agent, the loyalty is the combination of sense of hunger and sense of safety
+    # Calculate the loyalty score for every agent, the loyalty is the 
+    # combination of sense of hunger and sense of safety, to retain the effect
+    # of increase loyalty, the current loyalty is based on existing value + new sensory
     for each in self.spotTaken:
       if isinstance(each, Classes.OuterParty) or isinstance(each, Classes.InnerParty):
-         each.loyalty = each.senseOfHunger + each.senseOfSatefy
+         each.loyalty = max(each.loyalty*0.5 + (each.senseOfHunger + each.senseOfSatefy)*0.5, 100)
 
     # Truth ministry help in increasing loyalty score
     self.truthMinistry.increaseLoyaltyScore(self.spotTaken)
@@ -246,14 +253,15 @@ class BasicModel(mesa.Model):
     # Rebelled agent take action to kill other agents
     for each in self.spotTaken:
       if each.rebel == RebelProleActions.KillOuterParty:
-         pass
+        targetAgent = self.getRandomOuterParty()
       elif each.rebel == RebelProleActions.KillProle:
-         pass
+        targetAgent = self.getRandomProle()
       elif each.rebel == RebelOuterPartyActions.KillOuterParty:
-         pass
+        targetAgent = self.getRandomOuterParty()
       elif each.rebel == RebelOuterPartyActions.KillProle:
-         pass
-         
+        targetAgent = self.getRandomProle()
+      targetAgent.die(CauseOfDeath.Murder)
+
     # Love ministry executes or transform caught rebelled agents
     self.loveMinistry.processRebelCase()
 
@@ -300,7 +308,7 @@ class BasicModel(mesa.Model):
 
   def initializeInnerParty(self):
     # Initialize InnerParty
-    self.numberOfInnerParty = self.agentDistribution[Classes.InnerParty]*self.initial_population
+    self.numberOfInnerParty = self.agentDistribution[Classes.InnerParty]*self.initialPopulation
     for i in range(self.numberOfInnerParty):
         # Find a unique spot for the InnerParty agent
         x,y = self.findSpot()
@@ -322,7 +330,7 @@ class BasicModel(mesa.Model):
 
   def initalizeOuterParty(self):
     # Initialize OuterParty
-    numberOfOuterParty = self.agentDistribution[Classes.OuterParty]*self.initial_population
+    numberOfOuterParty = self.agentDistribution[Classes.OuterParty]*self.initialPopulation
     outerPartyMinistryDistribution = get_ministry_distribution(self.ministryResourcesDistribution, Classes.OuterParty)
     
     for i in range(numberOfOuterParty):
@@ -356,7 +364,7 @@ class BasicModel(mesa.Model):
 
   def initializeProles(self):
     # Initialize Proles
-    numberOfProles = self.agentDistribution[Classes.Proles]*self.initial_population
+    numberOfProles = self.agentDistribution[Classes.Proles]*self.initialPopulation
     prolesMinistryDistribution = get_ministry_distribution(self.ministryResourcesDistribution, Classes.Proles)
 
     for i in range(numberOfProles):
@@ -389,6 +397,20 @@ class BasicModel(mesa.Model):
 
         # Mark the spot as taken
         self.spotTaken.append(prole)
+
+  def getRandomOuterParty(self):
+    """
+      Get a random outerparty member to be murdured by rebelled agent
+    """
+    choosenOuterParty = random.choice(self.loveMinistry.outerParties + self.truthMinistry.outerParties + self.peaceMinistry.outerParties + self.plentyMinistry.outerParties)
+    return choosenOuterParty
+
+  def getRandomProle(self):
+    """
+      Get a random prole member to be murdured by rebelled agent
+    """
+    choosenOuterParty = random.choice( self.peaceMinistry.proles + self.plentyMinistry.proles)
+    return choosenOuterParty
 
   def removeAgentFromMinistry(self, agent):
      """

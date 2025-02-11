@@ -1,4 +1,6 @@
-from Common import Classes
+import math
+import random
+from Common import CauseOfDeath, Classes
 
 
 class LoveMinistry():
@@ -41,17 +43,18 @@ class LoveMinistry():
     elif agentType == Classes.Proles:
       return 0.2 # loose monitoring
 
-  def transformAgent(self):
+  def transformAgent(self, agent):
     """
-     Transform agent to have very high loyaty score
+     Transform agent to have very high loylaty score
     """
-    pass
+    agent.loyalty = 100
+    agent.rebel = False
 
-  def executeAgent(self):
+  def executeAgent(self, agent):
     """
      Execute the agent
     """
-    pass
+    agent.die(CauseOfDeath.Execution)
 
   def processRebelCase(self):
     """
@@ -59,7 +62,18 @@ class LoveMinistry():
       Decide to transform outerParty agent or execute outerParty agent
       Execute proles
     """
-    pass
+    numberOfCase = math.ceil(len(self.outerParties)//2)
+    while numberOfCase > 0:
+      rebelledAgent = self.rebelQueue.pop(0)
+      if isinstance(rebelledAgent, Classes.Proles):
+        self.executeAgent(rebelledAgent)
+      if isinstance(rebelledAgent, Classes.OuterParty):
+        executeOuterParty = random.choice([True,False])
+        if executeOuterParty:
+          self.executeAgent(rebelledAgent)
+        else:
+          self.transformAgent(rebelledAgent)
+
 
 
   def getMetricks(self):
