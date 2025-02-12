@@ -48,15 +48,20 @@ class TruthMinistry():
       return random.uniform(0.5, 1.0)
     elif cause == CauseOfDeath.BombAttack:
       return random.uniform(0.3, 0.8) 
-    
-  def getMetricks(self):
+
+
+  def getMetricks(self, agents):
     """
-      Collect the number of agents transformed to rebel
+      Collect the number of agents died because of bomb attack
       Calculate the delta
     """
-    pass
-
-
+    currentRebelled = 0
+    for agent in agents:
+      if not agent.rebel and agent.loyalty < 50:
+          currentRebelled += 1
+    delta = currentRebelled - self.numberOfTransformedRebelledAgents
+    self.numberOfTransformedRebelledAgents = currentRebelled # record the current rebelled agents
+    return delta, self.numberOfTransformedRebelledAgents 
   
   def allocateNewResources(self, resources):
     """

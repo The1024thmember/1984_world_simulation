@@ -103,13 +103,14 @@ class PlentyMinistry():
        agent.foodStock += distributed[agent.pos[0]][agent.pos[1]]
 
 
-  def getMetricks(self, agentsSpot):
+  def getMetricks(self):
     """
-      Collect the number of agents died because of hunger in this round
+      Collect the number of agents died because of bomb attack
       Calculate the delta
     """
-    for agent in agentsSpot:
-       if agent.
+    delta = self.numberOfDiedAgents[1] - self.numberOfDiedAgents[0]
+    self.numberOfDiedAgents[0] = self.numberOfDiedAgents[1] # record the current step of number of died agents
+    return delta, self.numberOfDiedAgents[0] 
 
   
   def allocateNewResources(self, resources):

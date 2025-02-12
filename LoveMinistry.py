@@ -74,14 +74,14 @@ class LoveMinistry():
         else:
           self.transformAgent(rebelledAgent)
 
-
-
   def getMetricks(self):
     """
-      Collect the number of rebelled agents in the queue
+      Collect the number of agents died because of bomb attack
       Calculate the delta
     """
-    pass
+    delta = self.numberOfDiedAgents[1] - self.numberOfDiedAgents[0]
+    self.numberOfDiedAgents[0] = self.numberOfDiedAgents[1] # record the current step of number of died agents
+    return delta, self.numberOfDiedAgents[0] 
 
   
   def allocateNewResources(self, resources):

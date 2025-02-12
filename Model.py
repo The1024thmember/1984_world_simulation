@@ -277,7 +277,7 @@ class BasicModel(mesa.Model):
     metrics[Ministry.Plenty]=self.plentyMinistry.getMetricks()
     metrics[Ministry.Peace]=self.peaceMinistry.getMetricks()
     metrics[Ministry.Love]=self.loveMinistry.getMetricks()
-    metrics[Ministry.Truth]=self.truthMinistry.getMetricks()
+    metrics[Ministry.Truth]=self.truthMinistry.getMetricks(self.spotTaken)
 
     # Inner party make decision
     self.ministryMembers = InnerParty.make_decision(metrics, self.ministryMembers)
