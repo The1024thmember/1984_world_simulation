@@ -25,7 +25,7 @@ class PeaceMinistry():
     self.outerParties = outerParties
     self.nInnerParty = nInnerParty
     self.weapons = 0 # number of weapon built
-    self.numberOfDiedAgents = 0
+    self.numberOfDiedAgents = [0,0] # indicate the [previous step number of agent died, the current step number of agent died]
     pass
 
   def collectWeapons(self):

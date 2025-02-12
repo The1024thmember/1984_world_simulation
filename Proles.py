@@ -98,8 +98,10 @@ class Proles(mesa.Agent):
     # Based on the died cause, trigger the following effect
     if cause == CauseOfDeath.Hunger:
       self.spreadSenseOfHunger()
+      self.model.plentyMinistry.numberOfDiedAgents[1]+=1
     elif cause == CauseOfDeath.BombAttack:
-       self.spreadSenseOfSatefy()
+      self.spreadSenseOfSatefy()
+      self.model.numberOfDiedAgents.numberOfDiedAgents[1]+=1
 
   def consumeFood(self):
     """

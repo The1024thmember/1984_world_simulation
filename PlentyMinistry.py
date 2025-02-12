@@ -27,7 +27,7 @@ class PlentyMinistry():
     self.proles = proles
     self.outerParties = outerParties
     self.nInnerParty = nInnerParty
-    self.numberOfDiedAgents = 0
+    self.numberOfDiedAgents = [0,0] # indicate the [previous step number of agent died, the current step number of agent died]
     self.diffusionRate = diffusionRate
     self.varianceThreshold = varianceThreshold
     pass
@@ -103,12 +103,13 @@ class PlentyMinistry():
        agent.foodStock += distributed[agent.pos[0]][agent.pos[1]]
 
 
-  def getMetricks(self):
+  def getMetricks(self, agentsSpot):
     """
       Collect the number of agents died because of hunger in this round
       Calculate the delta
     """
-    pass
+    for agent in agentsSpot:
+       if agent.
 
   
   def allocateNewResources(self, resources):

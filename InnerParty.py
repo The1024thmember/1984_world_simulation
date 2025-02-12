@@ -2,6 +2,8 @@
 import mesa
 import warnings
 
+from Common import CauseOfDeath
+
 # Suppress all UserWarnings, there are some UserWarning and DeprecationWarning
 # which spamming the terminal
 warnings.filterwarnings("ignore", category=UserWarning)
@@ -38,10 +40,16 @@ class InnerParty(mesa.Agent):
 
     remove from the grid, reduce the number of InnerParty in All ministries
   """
-  def die(self):
+  def die(self, cause):
     self.alive = False
     self.model.grid.remove_agent(self)
     self.model.schedule.remove(self)
+    if cause == CauseOfDeath.Hunger:
+      self.spreadSenseOfHunger()
+      self.model.plentyMinistry.numberOfDiedAgents[1]+=1
+    elif cause == CauseOfDeath.BombAttack:
+      self.spreadSenseOfSatefy()
+      self.model.numberOfDiedAgents.numberOfDiedAgents[1]+=1
 
   def consumeFood(self):
     """
