@@ -52,7 +52,7 @@ class TruthMinistry():
 
   def getMetricks(self, agents):
     """
-      Collect the number of agents died because of bomb attack
+      Collect the number of agents transformed in to rebelled agents
       Calculate the delta
     """
     currentRebelled = 0

@@ -63,7 +63,7 @@ class LoveMinistry():
       Execute proles
     """
     numberOfCase = math.ceil(len(self.outerParties)//2)
-    while numberOfCase > 0:
+    while numberOfCase > 0 and len(self.rebelQueue)>0:
       rebelledAgent = self.rebelQueue.pop(0)
       if isinstance(rebelledAgent, Classes.Proles):
         self.executeAgent(rebelledAgent)
@@ -76,12 +76,10 @@ class LoveMinistry():
 
   def getMetricks(self):
     """
-      Collect the number of agents died because of bomb attack
+      Collect the number of agents still in the queue
       Calculate the delta
     """
-    delta = self.numberOfDiedAgents[1] - self.numberOfDiedAgents[0]
-    self.numberOfDiedAgents[0] = self.numberOfDiedAgents[1] # record the current step of number of died agents
-    return delta, self.numberOfDiedAgents[0] 
+    return min(math.ceil(len(self.outerParties)//2),len(self.rebelQueue)), len(self.rebelQueue)
 
   
   def allocateNewResources(self, resources):
