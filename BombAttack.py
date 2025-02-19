@@ -1,7 +1,7 @@
 # Suppress all UserWarnings, there are some UserWarning and DeprecationWarning
 # which spamming the terminal
 import random
-
+import warnings
 
 warnings.filterwarnings("ignore", category=UserWarning)
 warnings.filterwarnings("ignore", category=DeprecationWarning)
