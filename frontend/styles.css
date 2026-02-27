@@ -90,6 +90,10 @@ button:hover { border-color: var(--accent); }
   color: var(--muted);
 }
 
+.legend.compact { margin-top: 10px; font-size: 12px; }
+
+.icon { font-style: normal; font-size: 14px; }
+
 .death-legend {
   display: flex;
   flex-wrap: wrap;

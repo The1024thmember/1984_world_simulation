@@ -20,6 +20,7 @@ function clamp(v, min, max) {
 
 const CAUSES = ["Hunger", "BombAttack", "Execution", "Murder"];
 const ROLES = ["InnerParty", "OuterParty", "Proles"];
+const MINISTRIES = ["Truth", "Love", "Peace", "Plenty"];
 
 const COLOR_MAP = {
   InnerParty: {
@@ -42,6 +43,13 @@ const COLOR_MAP = {
   },
 };
 
+const MINISTRY_ICON = {
+  Truth: "✝",
+  Love: "♥",
+  Peace: "☮",
+  Plenty: "⚒",
+};
+
 class Simulation {
   constructor(params) {
     this.params = params;
@@ -50,6 +58,7 @@ class Simulation {
     this.agents = [];
     this.series = [];
     this.deathSeries = [];
+    this.stepDeaths = this.initDeathCounts();
     this.init();
   }
 
@@ -71,10 +80,38 @@ class Simulation {
       [spots[i], spots[j]] = [spots[j], spots[i]];
     }
 
+    const outerWeights = {
+      Love: p.lovePct,
+      Truth: p.truthPct,
+      Peace: p.peacePct,
+      Plenty: p.plentyPct,
+    };
+    const proleWeights = {
+      Peace: p.prolePeacePct,
+      Plenty: 100 - p.prolePeacePct,
+    };
+
+    const pickWeighted = (weights) => {
+      const keys = Object.keys(weights);
+      const vals = keys.map(k => Math.max(0, weights[k]));
+      const sum = vals.reduce((a, b) => a + b, 0);
+      if (sum <= 0) return keys[Math.floor(this.rng() * keys.length)];
+      let r = this.rng() * sum;
+      for (let i = 0; i < keys.length; i++) {
+        r -= vals[i];
+        if (r <= 0) return keys[i];
+      }
+      return keys[0];
+    };
+
     const makeAgent = (type) => {
       const spot = spots.pop() || { x: 0, y: 0 };
+      let ministry = null;
+      if (type === "OuterParty") ministry = pickWeighted(outerWeights);
+      if (type === "Proles") ministry = pickWeighted(proleWeights);
       return {
         type,
+        ministry,
         x: spot.x,
         y: spot.y,
         alive: true,
@@ -180,7 +217,7 @@ class Simulation {
       const intensity = Math.max(1, Math.floor(randBetween(this.rng, 1, p.bombIntensity + 1)));
 
       let precision = 0;
-      const peaceOuter = this.agents.filter(a => a.alive && a.type === "OuterParty");
+      const peaceOuter = this.agents.filter(a => a.alive && a.type === "OuterParty" && a.ministry === "Peace");
       for (const a of peaceOuter) {
         if (a.rebelAction !== "Misfunction") precision += 0.08;
       }
@@ -229,7 +266,8 @@ class Simulation {
 
     for (const a of this.agents) {
       if (a.alive && (a.type === "OuterParty" || a.type === "Proles")) {
-        a.loyalty = clamp(a.loyalty + randBetween(this.rng, 2, 6), 0, 100);
+        const boost = a.ministry === "Truth" ? p.truthBoost : p.truthBoost * 0.4;
+        a.loyalty = clamp(a.loyalty + randBetween(this.rng, 1, 1 + boost), 0, 100);
       }
     }
 
@@ -239,10 +277,10 @@ class Simulation {
       const target = rebels[Math.floor(this.rng() * rebels.length)];
       if (!target) continue;
       if (target.type === "OuterParty") {
-        if (this.rng() < 0.5) this.recordDeath(target, "Execution");
+        if (this.rng() < p.loveImpact) this.recordDeath(target, "Execution");
         else target.rebel = false;
       } else if (target.type === "Proles") {
-        this.recordDeath(target, "Execution");
+        if (this.rng() < p.loveImpact) this.recordDeath(target, "Execution");
       }
     }
 
@@ -315,6 +353,13 @@ function getParams() {
     foodPMax: parseFloat($("foodPMax").value),
     weaponPMin: parseFloat($("weaponPMin").value),
     weaponPMax: parseFloat($("weaponPMax").value),
+    lovePct: parseFloat($("lovePct").value),
+    truthPct: parseFloat($("truthPct").value),
+    peacePct: parseFloat($("peacePct").value),
+    plentyPct: parseFloat($("plentyPct").value),
+    prolePeacePct: parseFloat($("prolePeacePct").value),
+    truthBoost: parseFloat($("truthBoost").value),
+    loveImpact: parseFloat($("loveImpact").value),
   };
 }
 
@@ -345,6 +390,11 @@ function initSim() {
   const sum = params.innerPct + params.outerPct + params.prolePct;
   if (Math.abs(sum - 1) > 0.01) {
     setStatus("Percentages must sum to 100% (±1%).");
+    return;
+  }
+  const outerSum = params.lovePct + params.truthPct + params.peacePct + params.plentyPct;
+  if (outerSum <= 0) {
+    setStatus("Outer ministry percentages must sum to > 0.");
     return;
   }
   sim = new Simulation(params);
@@ -382,6 +432,10 @@ function drawGrid() {
     gctx.stroke();
   }
 
+  gctx.textAlign = "center";
+  gctx.textBaseline = "middle";
+  gctx.font = `${Math.max(8, cell * 0.4)}px serif`;
+
   for (const a of sim.agents) {
     if (!a.alive) continue;
     const x = a.x * cell + cell / 2;
@@ -394,6 +448,10 @@ function drawGrid() {
       gctx.strokeStyle = "#ffcc00";
       gctx.lineWidth = 2;
       gctx.stroke();
+    }
+    if (a.ministry) {
+      gctx.fillStyle = "#f1f1f1";
+      gctx.fillText(MINISTRY_ICON[a.ministry], x, y);
     }
   }
 }

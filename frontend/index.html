@@ -67,6 +67,27 @@
           <label>Weapon Produce Max
             <input id="weaponPMax" type="number" min="0.5" max="10" step="0.1" value="3" />
           </label>
+          <label>Outer: Love %
+            <input id="lovePct" type="number" min="0" max="100" value="20" />
+          </label>
+          <label>Outer: Truth %
+            <input id="truthPct" type="number" min="0" max="100" value="20" />
+          </label>
+          <label>Outer: Peace %
+            <input id="peacePct" type="number" min="0" max="100" value="30" />
+          </label>
+          <label>Outer: Plenty %
+            <input id="plentyPct" type="number" min="0" max="100" value="30" />
+          </label>
+          <label>Proles: Peace %
+            <input id="prolePeacePct" type="number" min="0" max="100" value="50" />
+          </label>
+          <label>Truth Impact (loyalty boost)
+            <input id="truthBoost" type="number" min="0" max="10" step="0.1" value="4" />
+          </label>
+          <label>Love Impact (execution rate)
+            <input id="loveImpact" type="number" min="0" max="1" step="0.05" value="0.5" />
+          </label>
         </div>
         <div class="buttons">
           <button id="init">Initialize</button>
@@ -77,6 +98,12 @@
           <button id="export">Export Image</button>
         </div>
         <div class="status" id="status">Ready.</div>
+        <div class="legend compact">
+          <span class="legend-item"><i class="icon">✝</i>Truth</span>
+          <span class="legend-item"><i class="icon">♥</i>Love</span>
+          <span class="legend-item"><i class="icon">☮</i>Peace</span>
+          <span class="legend-item"><i class="icon">⚒</i>Plenty</span>
+        </div>
       </section>
 
       <section class="panel viz">
