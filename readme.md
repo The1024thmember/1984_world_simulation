@@ -119,3 +119,11 @@ python3 simulate.py --steps 200 --report-every 20 --record --out-dir output
 ```
 
 Open `output/view.html` in a browser to see the animation and plots.
+
+### Interactive Frontend
+The `frontend/` app runs fully in the browser with adjustable parameters and export.
+
+Open `frontend/index.html` in a browser and use the control panel to:
+- set class distribution and simulation parameters
+- run/pause/step the simulation
+- export a combined grid+plot image named by parameters
