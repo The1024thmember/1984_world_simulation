@@ -23,32 +23,15 @@ const ROLES = ["InnerParty", "OuterParty", "Proles"];
 const MINISTRIES = ["Truth", "Love", "Peace", "Plenty"];
 
 const COLOR_MAP = {
-  InnerParty: {
-    Hunger: "#ff8a80",
-    BombAttack: "#ff5252",
-    Execution: "#d50000",
-    Murder: "#ff1744",
-  },
-  OuterParty: {
-    Hunger: "#80bfff",
-    BombAttack: "#42a5f5",
-    Execution: "#1565c0",
-    Murder: "#1e88e5",
-  },
-  Proles: {
-    Hunger: "#81c784",
-    BombAttack: "#4caf50",
-    Execution: "#2e7d32",
-    Murder: "#43a047",
-  },
+  InnerParty: { Hunger: "#ff8a80", BombAttack: "#ff5252", Execution: "#d50000", Murder: "#ff1744" },
+  OuterParty: { Hunger: "#80bfff", BombAttack: "#42a5f5", Execution: "#1565c0", Murder: "#1e88e5" },
+  Proles: { Hunger: "#81c784", BombAttack: "#4caf50", Execution: "#2e7d32", Murder: "#43a047" },
 };
 
-const MINISTRY_ICON = {
-  Truth: "✝",
-  Love: "♥",
-  Peace: "☮",
-  Plenty: "⚒",
-};
+const ROLE_COLOR = { InnerParty: "#d62728", OuterParty: "#1f77b4", Proles: "#2ca02c" };
+const CAUSE_COLOR = { Hunger: "#ffb300", BombAttack: "#ef5350", Execution: "#8e24aa", Murder: "#26c6da" };
+
+const MINISTRY_ICON = { Truth: "✝", Love: "♥", Peace: "☮", Plenty: "⚒", Party: "★" };
 
 class Simulation {
   constructor(params) {
@@ -59,6 +42,9 @@ class Simulation {
     this.series = [];
     this.deathSeries = [];
     this.stepDeaths = this.initDeathCounts();
+    this.totalDeathsByRole = { InnerParty: 0, OuterParty: 0, Proles: 0 };
+    this.totalDeathsByCause = { Hunger: 0, BombAttack: 0, Execution: 0, Murder: 0 };
+    this.totalDeathsByRoleMinistry = { InnerParty: {}, OuterParty: {}, Proles: {} };
     this.init();
   }
 
@@ -71,25 +57,15 @@ class Simulation {
 
     const spots = [];
     for (let x = 0; x < p.width; x++) {
-      for (let y = 0; y < p.height; y++) {
-        spots.push({ x, y });
-      }
+      for (let y = 0; y < p.height; y++) spots.push({ x, y });
     }
     for (let i = spots.length - 1; i > 0; i--) {
       const j = Math.floor(this.rng() * (i + 1));
       [spots[i], spots[j]] = [spots[j], spots[i]];
     }
 
-    const outerWeights = {
-      Love: p.lovePct,
-      Truth: p.truthPct,
-      Peace: p.peacePct,
-      Plenty: p.plentyPct,
-    };
-    const proleWeights = {
-      Peace: p.prolePeacePct,
-      Plenty: 100 - p.prolePeacePct,
-    };
+    const outerWeights = { Love: p.lovePct, Truth: p.truthPct, Peace: p.peacePct, Plenty: p.plentyPct };
+    const proleWeights = { Peace: p.prolePeacePct, Plenty: 100 - p.prolePeacePct };
 
     const pickWeighted = (weights) => {
       const keys = Object.keys(weights);
@@ -109,6 +85,7 @@ class Simulation {
       let ministry = null;
       if (type === "OuterParty") ministry = pickWeighted(outerWeights);
       if (type === "Proles") ministry = pickWeighted(proleWeights);
+      if (type === "InnerParty") ministry = "Party";
       return {
         type,
         ministry,
@@ -134,6 +111,9 @@ class Simulation {
     this.deathSeries = [];
     this.stepCount = 0;
     this.stepDeaths = this.initDeathCounts();
+    this.totalDeathsByRole = { InnerParty: 0, OuterParty: 0, Proles: 0 };
+    this.totalDeathsByCause = { Hunger: 0, BombAttack: 0, Execution: 0, Murder: 0 };
+    this.totalDeathsByRoleMinistry = { InnerParty: {}, OuterParty: {}, Proles: {} };
   }
 
   initDeathCounts() {
@@ -149,6 +129,13 @@ class Simulation {
     if (!agent || !agent.alive) return;
     agent.alive = false;
     this.stepDeaths[agent.type][cause] += 1;
+    this.totalDeathsByRole[agent.type] += 1;
+    this.totalDeathsByCause[cause] += 1;
+    const minKey = agent.ministry || "Party";
+    if (!this.totalDeathsByRoleMinistry[agent.type][minKey]) {
+      this.totalDeathsByRoleMinistry[agent.type][minKey] = 0;
+    }
+    this.totalDeathsByRoleMinistry[agent.type][minKey] += 1;
   }
 
   getNeighbors(agent, range = 1) {
@@ -323,13 +310,20 @@ class Simulation {
 }
 
 const grid = $("grid");
-const plot = $("plot");
+const line = $("line");
+const pieRole = $("pieRole");
+const pieCause = $("pieCause");
 const gctx = grid.getContext("2d");
-const pctx = plot.getContext("2d");
+const lctx = line.getContext("2d");
+const prctx = pieRole.getContext("2d");
+const pcctx = pieCause.getContext("2d");
 const deathLegend = $("deathLegend");
+const roleLegend = $("roleLegend");
+const causeLegend = $("causeLegend");
 
 let sim = null;
 let timer = null;
+let pieRenderInterval = 10;
 
 function getParams() {
   const innerPct = parseFloat($("innerPct").value) / 100;
@@ -397,17 +391,19 @@ function initSim() {
     setStatus("Outer ministry percentages must sum to > 0.");
     return;
   }
+  pieRenderInterval = Math.max(1, Math.floor(params.steps * 0.1));
   sim = new Simulation(params);
   sim.recordSeries();
   buildLegend();
   draw();
+  drawPies(true);
   setStatus("Initialized.");
 }
 
 function draw() {
   if (!sim) return;
   drawGrid();
-  drawPlot();
+  drawLine();
 }
 
 function drawGrid() {
@@ -456,67 +452,133 @@ function drawGrid() {
   }
 }
 
-function drawPlot() {
+function drawLine() {
   const series = sim.series;
-  const deaths = sim.deathSeries;
   if (!series.length) return;
-  const w = plot.width;
-  const h = plot.height;
-  pctx.clearRect(0, 0, w, h);
-  pctx.fillStyle = "#0a1016";
-  pctx.fillRect(0, 0, w, h);
+  const w = line.width;
+  const h = line.height;
+  lctx.clearRect(0, 0, w, h);
+  lctx.fillStyle = "#0a1016";
+  lctx.fillRect(0, 0, w, h);
 
-  const padding = 40;
+  const padding = 32;
   const maxStep = Math.max(...series.map(s => s.step));
-  let maxVal = Math.max(...series.map(s => s.population), 1);
-
-  for (const entry of deaths) {
-    if (!entry.counts) continue;
-    for (const role of ROLES) {
-      for (const cause of CAUSES) {
-        maxVal = Math.max(maxVal, entry.counts[role][cause]);
-      }
-    }
-  }
+  const maxVal = Math.max(...series.map(s => s.population), 1);
 
   const xScale = (step) => padding + (step / maxStep) * (w - padding * 2);
   const yScale = (val) => h - padding - (val / maxVal) * (h - padding * 2);
 
-  pctx.strokeStyle = "#233040";
-  pctx.beginPath();
-  pctx.moveTo(padding, padding);
-  pctx.lineTo(padding, h - padding);
-  pctx.lineTo(w - padding, h - padding);
-  pctx.stroke();
+  lctx.strokeStyle = "#233040";
+  lctx.beginPath();
+  lctx.moveTo(padding, padding);
+  lctx.lineTo(padding, h - padding);
+  lctx.lineTo(w - padding, h - padding);
+  lctx.stroke();
 
-  function drawLine(values, color, width = 1.5) {
-    pctx.strokeStyle = color;
-    pctx.lineWidth = width;
-    pctx.beginPath();
+  function drawLineSeries(values, color, width = 2) {
+    lctx.strokeStyle = color;
+    lctx.lineWidth = width;
+    lctx.beginPath();
     values.forEach((v, i) => {
       const x = xScale(series[i].step);
       const y = yScale(v);
-      if (i === 0) pctx.moveTo(x, y);
-      else pctx.lineTo(x, y);
+      if (i === 0) lctx.moveTo(x, y);
+      else lctx.lineTo(x, y);
     });
-    pctx.stroke();
-    pctx.lineWidth = 1;
+    lctx.stroke();
+    lctx.lineWidth = 1;
   }
 
-  drawLine(series.map(s => s.population), "#1f77b4", 2);
-  drawLine(series.map(s => s.rebels), "#ff7f0e", 2);
+  drawLineSeries(series.map(s => s.population), "#1f77b4");
+  drawLineSeries(series.map(s => s.rebels), "#ff7f0e");
+
+  lctx.fillStyle = "#1f77b4";
+  lctx.fillText("Population", padding + 10, padding - 8);
+  lctx.fillStyle = "#ff7f0e";
+  lctx.fillText("Rebels", padding + 100, padding - 8);
+}
+
+function drawPies(force = false) {
+  if (!sim) return;
+  if (!force && sim.stepCount % pieRenderInterval !== 0 && sim.stepCount !== sim.params.steps) return;
+  drawRolePie();
+  drawCausePie();
+}
+
+function drawRolePie() {
+  const ctx = prctx;
+  const w = pieRole.width;
+  const h = pieRole.height;
+  ctx.clearRect(0, 0, w, h);
+  ctx.fillStyle = "#0a1016";
+  ctx.fillRect(0, 0, w, h);
+
+  const total = Object.values(sim.totalDeathsByRole).reduce((a, b) => a + b, 0) || 1;
+  let start = -Math.PI / 2;
 
   for (const role of ROLES) {
-    for (const cause of CAUSES) {
-      const values = deaths.map(d => (d.counts ? d.counts[role][cause] : 0));
-      drawLine(values, COLOR_MAP[role][cause], 1);
-    }
+    const val = sim.totalDeathsByRole[role];
+    const angle = (val / total) * Math.PI * 2;
+    ctx.beginPath();
+    ctx.moveTo(w / 2, h / 2);
+    ctx.fillStyle = ROLE_COLOR[role];
+    ctx.arc(w / 2, h / 2, Math.min(w, h) / 2 - 6, start, start + angle);
+    ctx.fill();
+    start += angle;
   }
 
-  pctx.fillStyle = "#1f77b4";
-  pctx.fillText("Population", padding + 10, padding - 10);
-  pctx.fillStyle = "#ff7f0e";
-  pctx.fillText("Rebels", padding + 120, padding - 10);
+  roleLegend.innerHTML = "";
+  for (const role of ROLES) {
+    const val = sim.totalDeathsByRole[role];
+    const pct = ((val / total) * 100).toFixed(1);
+    const item = document.createElement("span");
+    item.className = "legend-item";
+    const swatch = document.createElement("span");
+    swatch.className = "swatch";
+    swatch.style.background = ROLE_COLOR[role];
+    const minIcons = Object.keys(sim.totalDeathsByRoleMinistry[role] || {});
+    const iconText = minIcons.length ? minIcons.map(m => MINISTRY_ICON[m] || "?").join(" ") : "";
+    item.appendChild(swatch);
+    item.appendChild(document.createTextNode(`${role} ${iconText} (${pct}%)`));
+    roleLegend.appendChild(item);
+  }
+}
+
+function drawCausePie() {
+  const ctx = pcctx;
+  const w = pieCause.width;
+  const h = pieCause.height;
+  ctx.clearRect(0, 0, w, h);
+  ctx.fillStyle = "#0a1016";
+  ctx.fillRect(0, 0, w, h);
+
+  const total = Object.values(sim.totalDeathsByCause).reduce((a, b) => a + b, 0) || 1;
+  let start = -Math.PI / 2;
+
+  for (const cause of CAUSES) {
+    const val = sim.totalDeathsByCause[cause];
+    const angle = (val / total) * Math.PI * 2;
+    ctx.beginPath();
+    ctx.moveTo(w / 2, h / 2);
+    ctx.fillStyle = CAUSE_COLOR[cause];
+    ctx.arc(w / 2, h / 2, Math.min(w, h) / 2 - 6, start, start + angle);
+    ctx.fill();
+    start += angle;
+  }
+
+  causeLegend.innerHTML = "";
+  for (const cause of CAUSES) {
+    const val = sim.totalDeathsByCause[cause];
+    const pct = ((val / total) * 100).toFixed(1);
+    const item = document.createElement("span");
+    item.className = "legend-item";
+    const swatch = document.createElement("span");
+    swatch.className = "swatch";
+    swatch.style.background = CAUSE_COLOR[cause];
+    item.appendChild(swatch);
+    item.appendChild(document.createTextNode(`${cause} (${pct}%)`));
+    causeLegend.appendChild(item);
+  }
 }
 
 function stepSim() {
@@ -528,6 +590,7 @@ function stepSim() {
   }
   sim.step();
   draw();
+  drawPies();
   setStatus(`Step ${sim.stepCount} / ${sim.params.steps}`);
 }
 
@@ -551,13 +614,15 @@ function reset() {
 function exportImage() {
   if (!sim) return;
   const exportCanvas = document.createElement("canvas");
-  exportCanvas.width = grid.width + plot.width;
-  exportCanvas.height = Math.max(grid.height, plot.height);
+  exportCanvas.width = grid.width + line.width;
+  exportCanvas.height = Math.max(grid.height, line.height + pieRole.height + 40);
   const ctx = exportCanvas.getContext("2d");
   ctx.fillStyle = "#0a1016";
   ctx.fillRect(0, 0, exportCanvas.width, exportCanvas.height);
   ctx.drawImage(grid, 0, 0);
-  ctx.drawImage(plot, grid.width, 0);
+  ctx.drawImage(line, grid.width, 0);
+  ctx.drawImage(pieRole, grid.width, line.height + 10);
+  ctx.drawImage(pieCause, grid.width + pieRole.width + 10, line.height + 10);
 
   const p = sim.params;
   const name = `sim_w${p.width}_h${p.height}_pop${p.population}_bomb${p.bombFreq}_seed${p.seed}.png`;

@@ -116,7 +116,21 @@
         <div class="death-legend" id="deathLegend"></div>
         <div class="row">
           <canvas id="grid" width="500" height="500"></canvas>
-          <canvas id="plot" width="600" height="500"></canvas>
+          <div class="charts">
+            <canvas id="line" width="600" height="240"></canvas>
+            <div class="pies">
+              <div class="pie-block">
+                <h3>Deaths by Role</h3>
+                <canvas id="pieRole" width="280" height="220"></canvas>
+                <div id="roleLegend" class="mini-legend"></div>
+              </div>
+              <div class="pie-block">
+                <h3>Deaths by Cause</h3>
+                <canvas id="pieCause" width="280" height="220"></canvas>
+                <div id="causeLegend" class="mini-legend"></div>
+              </div>
+            </div>
+          </div>
         </div>
       </section>
     </main>
