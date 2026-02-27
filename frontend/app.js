@@ -18,6 +18,30 @@ function clamp(v, min, max) {
   return Math.max(min, Math.min(max, v));
 }
 
+const CAUSES = ["Hunger", "BombAttack", "Execution", "Murder"];
+const ROLES = ["InnerParty", "OuterParty", "Proles"];
+
+const COLOR_MAP = {
+  InnerParty: {
+    Hunger: "#ff8a80",
+    BombAttack: "#ff5252",
+    Execution: "#d50000",
+    Murder: "#ff1744",
+  },
+  OuterParty: {
+    Hunger: "#80bfff",
+    BombAttack: "#42a5f5",
+    Execution: "#1565c0",
+    Murder: "#1e88e5",
+  },
+  Proles: {
+    Hunger: "#81c784",
+    BombAttack: "#4caf50",
+    Execution: "#2e7d32",
+    Murder: "#43a047",
+  },
+};
+
 class Simulation {
   constructor(params) {
     this.params = params;
@@ -25,6 +49,7 @@ class Simulation {
     this.stepCount = 0;
     this.agents = [];
     this.series = [];
+    this.deathSeries = [];
     this.init();
   }
 
@@ -69,7 +94,23 @@ class Simulation {
     for (let i = 0; i < nProle; i++) this.agents.push(makeAgent("Proles"));
 
     this.series = [];
+    this.deathSeries = [];
     this.stepCount = 0;
+  }
+
+  initDeathCounts() {
+    const counts = {};
+    for (const role of ROLES) {
+      counts[role] = {};
+      for (const cause of CAUSES) counts[role][cause] = 0;
+    }
+    return counts;
+  }
+
+  recordDeath(agent, cause) {
+    if (!agent || !agent.alive) return;
+    agent.alive = false;
+    this.stepDeaths[agent.type][cause] += 1;
   }
 
   getNeighbors(agent, range = 1) {
@@ -86,6 +127,7 @@ class Simulation {
   step() {
     const p = this.params;
     this.stepCount += 1;
+    this.stepDeaths = this.initDeathCounts();
 
     for (const a of this.agents) {
       if (!a.alive || a.type === "InnerParty") continue;
@@ -152,7 +194,7 @@ class Simulation {
           if (weapons >= intensity && this.rng() < 0.6 && dist <= predictedRadius * predictedRadius) {
             weapons -= intensity;
           } else {
-            a.alive = false;
+            this.recordDeath(a, "BombAttack");
           }
         }
       }
@@ -161,7 +203,7 @@ class Simulation {
     for (const a of this.agents) {
       if (!a.alive || a.type === "InnerParty") continue;
       if (a.foodStock < a.foodCRate) {
-        a.alive = false;
+        this.recordDeath(a, "Hunger");
       } else {
         a.foodStock -= a.foodCRate;
         const hunger = clamp(1 - (a.foodStock / Math.max(1, a.foodCRate)) / 3, 0, 1);
@@ -196,10 +238,10 @@ class Simulation {
       const target = rebels[Math.floor(this.rng() * rebels.length)];
       if (!target) continue;
       if (target.type === "OuterParty") {
-        if (this.rng() < 0.5) target.alive = false;
+        if (this.rng() < 0.5) this.recordDeath(target, "Execution");
         else target.rebel = false;
       } else if (target.type === "Proles") {
-        target.alive = false;
+        this.recordDeath(target, "Execution");
       }
     }
 
@@ -208,12 +250,12 @@ class Simulation {
       if (a.rebelAction === "KillOuter") {
         const candidates = this.agents.filter(x => x.alive && x.type === "OuterParty" && x !== a);
         const victim = candidates[Math.floor(this.rng() * Math.max(1, candidates.length))];
-        if (victim) victim.alive = false;
+        if (victim) this.recordDeath(victim, "Murder");
       }
       if (a.rebelAction === "KillProle") {
         const candidates = this.agents.filter(x => x.alive && x.type === "Proles" && x !== a);
         const victim = candidates[Math.floor(this.rng() * Math.max(1, candidates.length))];
-        if (victim) victim.alive = false;
+        if (victim) this.recordDeath(victim, "Murder");
       }
     }
 
@@ -236,6 +278,7 @@ class Simulation {
       outerLoyalty: avgLoyalty(outer),
       proleLoyalty: avgLoyalty(proles),
     });
+    this.deathSeries.push({ step: this.stepCount, counts: this.stepDeaths });
   }
 }
 
@@ -243,6 +286,7 @@ const grid = $("grid");
 const plot = $("plot");
 const gctx = grid.getContext("2d");
 const pctx = plot.getContext("2d");
+const deathLegend = $("deathLegend");
 
 let sim = null;
 let timer = null;
@@ -276,6 +320,24 @@ function setStatus(msg) {
   $("status").textContent = msg;
 }
 
+function buildLegend() {
+  deathLegend.innerHTML = "";
+  for (const role of ROLES) {
+    for (const cause of CAUSES) {
+      const item = document.createElement("span");
+      item.className = "legend-item";
+      const swatch = document.createElement("span");
+      swatch.className = "swatch";
+      swatch.style.background = COLOR_MAP[role][cause];
+      const label = document.createElement("span");
+      label.textContent = `${role} - ${cause}`;
+      item.appendChild(swatch);
+      item.appendChild(label);
+      deathLegend.appendChild(item);
+    }
+  }
+}
+
 function initSim() {
   const params = getParams();
   const sum = params.innerPct + params.outerPct + params.prolePct;
@@ -285,6 +347,7 @@ function initSim() {
   }
   sim = new Simulation(params);
   sim.recordSeries();
+  buildLegend();
   draw();
   setStatus("Initialized.");
 }
@@ -335,6 +398,7 @@ function drawGrid() {
 
 function drawPlot() {
   const series = sim.series;
+  const deaths = sim.deathSeries;
   if (!series.length) return;
   const w = plot.width;
   const h = plot.height;
@@ -344,7 +408,15 @@ function drawPlot() {
 
   const padding = 40;
   const maxStep = Math.max(...series.map(s => s.step));
-  const maxVal = Math.max(...series.map(s => s.population), 1);
+  let maxVal = Math.max(...series.map(s => s.population), 1);
+
+  for (const entry of deaths) {
+    for (const role of ROLES) {
+      for (const cause of CAUSES) {
+        maxVal = Math.max(maxVal, entry.counts[role][cause]);
+      }
+    }
+  }
 
   const xScale = (step) => padding + (step / maxStep) * (w - padding * 2);
   const yScale = (val) => h - padding - (val / maxVal) * (h - padding * 2);
@@ -356,8 +428,9 @@ function drawPlot() {
   pctx.lineTo(w - padding, h - padding);
   pctx.stroke();
 
-  function drawLine(values, color) {
+  function drawLine(values, color, width = 1.5) {
     pctx.strokeStyle = color;
+    pctx.lineWidth = width;
     pctx.beginPath();
     values.forEach((v, i) => {
       const x = xScale(series[i].step);
@@ -366,10 +439,18 @@ function drawPlot() {
       else pctx.lineTo(x, y);
     });
     pctx.stroke();
+    pctx.lineWidth = 1;
   }
 
-  drawLine(series.map(s => s.population), "#1f77b4");
-  drawLine(series.map(s => s.rebels), "#ff7f0e");
+  drawLine(series.map(s => s.population), "#1f77b4", 2);
+  drawLine(series.map(s => s.rebels), "#ff7f0e", 2);
+
+  for (const role of ROLES) {
+    for (const cause of CAUSES) {
+      const values = deaths.map(d => d.counts[role][cause]);
+      drawLine(values, COLOR_MAP[role][cause], 1);
+    }
+  }
 
   pctx.fillStyle = "#1f77b4";
   pctx.fillText("Population", padding + 10, padding - 10);
