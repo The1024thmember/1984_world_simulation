@@ -127,3 +127,11 @@ Open `frontend/index.html` in a browser and use the control panel to:
 - set class distribution and simulation parameters
 - run/pause/step the simulation
 - export a combined grid+plot image named by parameters
+
+### Stability Loops Added
+To make outcomes less deterministic and more 1984-like, the frontend simulation adds:
+- **Truth Ministry memory decay**: stress decays faster for Truth agents, slowing rebellion without fixing material conditions.
+- **Rationing bias**: food distribution favors inner/outer party based on a bias control.
+- **Defense spend**: a slice of production converts to defense, reducing bomb deaths but increasing hunger risk.
+
+These are controllable in the frontend as `Truth Impact`, `Ration Bias`, and `Defense Spend`.

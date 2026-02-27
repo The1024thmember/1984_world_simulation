@@ -30,6 +30,7 @@ const COLOR_MAP = {
 
 const ROLE_COLOR = { InnerParty: "#d62728", OuterParty: "#1f77b4", Proles: "#2ca02c" };
 const CAUSE_COLOR = { Hunger: "#ffb300", BombAttack: "#ef5350", Execution: "#8e24aa", Murder: "#26c6da" };
+const ROLE_PRIORITY = { InnerParty: 2, OuterParty: 1, Proles: 0 };
 
 const MINISTRY_ICON = { Truth: "✝", Love: "♥", Peace: "☮", Plenty: "⚒", Party: "★" };
 
@@ -99,6 +100,7 @@ class Simulation {
         foodCRate: randBetween(this.rng, p.foodCMin, p.foodCMax),
         foodPRate: type === "Proles" ? randBetween(this.rng, p.foodPMin, p.foodPMax) : 0,
         weaponPRate: type === "Proles" ? randBetween(this.rng, p.weaponPMin, p.weaponPMax) : 0,
+        stress: 0,
       };
     };
 
@@ -185,9 +187,20 @@ class Simulation {
     totalFood *= efficiency;
 
     const living = this.agents.filter(a => a.alive);
-    const perAgent = totalFood / Math.max(1, living.length);
+    const foodAvailable = totalFood * (1 - p.defenseSpend);
+    let totalWeight = 0;
+    const weights = new Map();
     for (const a of living) {
-      a.foodStock += perAgent;
+      const base = 1 + (ROLE_PRIORITY[a.type] * p.rationBias);
+      const loyaltyFactor = a.type === "InnerParty" ? 1 : (0.5 + (a.loyalty / 200));
+      const rebelPenalty = a.rebel ? 0.7 : 1;
+      const weight = Math.max(0.1, base * loyaltyFactor * rebelPenalty);
+      weights.set(a, weight);
+      totalWeight += weight;
+    }
+    for (const a of living) {
+      const portion = totalWeight > 0 ? (weights.get(a) / totalWeight) : (1 / living.length);
+      a.foodStock += foodAvailable * portion;
     }
 
     let weapons = 0;
@@ -196,6 +209,7 @@ class Simulation {
         weapons += a.weaponPRate * (a.rebelAction === "Misfunction" ? 0.1 : 1);
       }
     }
+    weapons += totalFood * p.defenseSpend;
 
     if (this.rng() < p.bombFreq) {
       const cx = Math.floor(this.rng() * p.width);
@@ -218,6 +232,7 @@ class Simulation {
         if (dist <= radius * radius) {
           if (weapons >= intensity && this.rng() < 0.6 && dist <= predictedRadius * predictedRadius) {
             weapons -= intensity;
+            a.stress += 6;
           } else {
             this.recordDeath(a, "BombAttack");
           }
@@ -232,7 +247,7 @@ class Simulation {
       } else {
         a.foodStock -= a.foodCRate;
         const hunger = clamp(1 - (a.foodStock / Math.max(1, a.foodCRate)) / 3, 0, 1);
-        a.loyalty = clamp(a.loyalty - hunger * 5, 0, 100);
+        a.stress += hunger * 10;
       }
     }
 
@@ -253,8 +268,10 @@ class Simulation {
 
     for (const a of this.agents) {
       if (a.alive && (a.type === "OuterParty" || a.type === "Proles")) {
-        const boost = a.ministry === "Truth" ? p.truthBoost : p.truthBoost * 0.4;
-        a.loyalty = clamp(a.loyalty + randBetween(this.rng, 1, 1 + boost), 0, 100);
+        const decay = a.ministry === "Truth" ? p.truthBoost : p.truthBoost * 0.3;
+        a.stress = clamp(a.stress - decay, 0, 100);
+        const perceived = clamp(100 - a.stress, 0, 100);
+        a.loyalty = clamp(a.loyalty * 0.7 + perceived * 0.3, 0, 100);
       }
     }
 
@@ -354,6 +371,8 @@ function getParams() {
     prolePeacePct: parseFloat($("prolePeacePct").value),
     truthBoost: parseFloat($("truthBoost").value),
     loveImpact: parseFloat($("loveImpact").value),
+    rationBias: parseFloat($("rationBias").value),
+    defenseSpend: parseFloat($("defenseSpend").value),
   };
 }
 
