@@ -95,3 +95,27 @@ is an **exponential growth function** that determines the probability of rebelli
 
 1. For prole, a lower alpha value has been used, since prole are less educated and less active in their thought, the rebel can only spread when they are quite unhappy with their environment
 2. For Outer party, a higher alpha value has been used due to their work nature, their "double thought" and their experience in how the government works in mind controlling, so they are quite easy to be influenced with new idea
+
+### How To Run
+This repo includes a minimal `mesa` stub so it can run without external dependencies.
+
+Run a 100-step simulation with summaries every 10 steps:
+
+```bash
+python3 simulate.py --steps 100 --report-every 10
+```
+
+You can adjust parameters:
+
+```bash
+python3 simulate.py --steps 200 --report-every 20 --population 240 --bomb-freq 0.3
+```
+
+### Animation + Plots
+This produces an HTML viewer with a grid animation and line charts.
+
+```bash
+python3 simulate.py --steps 200 --report-every 20 --record --out-dir output
+```
+
+Open `output/view.html` in a browser to see the animation and plots.

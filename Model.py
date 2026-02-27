@@ -1,5 +1,4 @@
 ### Mesa version = 3.0.3
-import math
 import mesa
 import random
 
@@ -189,6 +188,8 @@ class BasicModel(mesa.Model):
        width = self.width,
        height = self.height)
 
+    self.death_counts = {cause: 0 for cause in CauseOfDeath}
+
   def step(self):
     """
     Proles should do their production
@@ -204,14 +205,14 @@ class BasicModel(mesa.Model):
 
     # Determine if agent is rebel or not
     for each in self.spotTaken:
-      if not each.rebel and (isinstance(each, OuterParty) or isinstance(each, InnerParty)):
+      if isinstance(each, (OuterParty, Proles)):
         each.rebel = each.loyalty < 50
 
     # Get rebelled agent activity
     self.getRebelledAgentActivity()
 
     # Food production, the proles produces food, then get distruibuted
-    self.plentyMinistry.generateAndDistributeFood(self.spotTaken, gridSize = self.height)
+    self.plentyMinistry.generateAndDistributeFood(self.spotTaken, gridSize = (self.width, self.height))
 
     # Weapon production
     self.peaceMinistry.collectWeapons()
@@ -220,14 +221,14 @@ class BasicModel(mesa.Model):
     # 1. Defend bomb attack
     # 2. Calculate Casualty
     # 3. Spread of sense of safety via network effect
-    if random.randint(0,10)<2:
+    if self.bomb.should_attack():
       # step 1: defend bomb attack
       attackedLocation = self.peaceMinistry.defendBombAttack(self.bomb)
       for pos in attackedLocation:
         this_cell = self.grid.get_cell_list_contents(pos)
         for agent in this_cell:
           # need to ensure the agent is removed from the ministry as well
-          if isinstance(agent, Proles) or isinstance(agent, OuterParty) or isinstance(agent, InnerParty):
+          if isinstance(agent, (Proles, OuterParty, InnerParty)):
             # step 2: calculate casualty
             agent.die(CauseOfDeath.BombAttack)
 
@@ -244,32 +245,34 @@ class BasicModel(mesa.Model):
     # combination of sense of hunger and sense of safety, to retain the effect
     # of increase loyalty, the current loyalty is based on existing value + new sensory
     for each in self.spotTaken:
-      if isinstance(each, Classes.OuterParty) or isinstance(each, Classes.InnerParty):
-         each.loyalty = max(each.loyalty*0.5 + (each.senseOfHunger + each.senseOfSatefy)*0.5, 100)
+      if isinstance(each, (OuterParty, Proles)):
+         each.loyalty = compute_loyalty(each.loyalty, each.senseOfHunger, each.senseOfSafety)
 
     # Truth ministry help in increasing loyalty score
     self.truthMinistry.increaseLoyaltyScore(self.spotTaken)
 
     # Rebelled agent take action to kill other agents
     for each in self.spotTaken:
-      if each.rebel == RebelProleActions.KillOuterParty:
-        targetAgent = self.getRandomOuterParty()
-      elif each.rebel == RebelProleActions.KillProle:
-        targetAgent = self.getRandomProle()
-      elif each.rebel == RebelOuterPartyActions.KillOuterParty:
-        targetAgent = self.getRandomOuterParty()
-      elif each.rebel == RebelOuterPartyActions.KillProle:
-        targetAgent = self.getRandomProle()
-      targetAgent.die(CauseOfDeath.Murder)
+      targetAgent = None
+      if each.rebel_action == RebelProleActions.KillOuterParty:
+        targetAgent = self.getRandomOuterParty(exclude=each)
+      elif each.rebel_action == RebelProleActions.KillProle:
+        targetAgent = self.getRandomProle(exclude=each)
+      elif each.rebel_action == RebelOuterPartyActions.KillOuterParty:
+        targetAgent = self.getRandomOuterParty(exclude=each)
+      elif each.rebel_action == RebelOuterPartyActions.KillProle:
+        targetAgent = self.getRandomProle(exclude=each)
+      if targetAgent is not None:
+        targetAgent.die(CauseOfDeath.Murder)
 
     # Love ministry executes or transform caught rebelled agents
     self.loveMinistry.processRebelCase()
 
     # Refresh the alive agent
-    for each in self.spotTaken:
+    for each in list(self.spotTaken):
        if not each.alive:
-        self.removeAgentFromMinistry(agent)
-    self.spotTaken = [each for each in self.spotTaken if each[0].alive]
+        self.removeAgentFromMinistry(each)
+    self.spotTaken = [each for each in self.spotTaken if each.alive]
     
     # Collect metrics and inner party make decisions on whether to adjust resources allocation
     # We assume that the agent will still perform their job during the step when they were dead
@@ -296,19 +299,19 @@ class BasicModel(mesa.Model):
      for each in self.spotTaken:
         if each.rebel:
           if isinstance(each, OuterParty):
-            # here we assign the functionality of rebelled behaviour to the agent via the rebel variable
             outerPartyRebelActions = list(self.outer_party_probabilities.keys())
             outerPartyRebelWeights = list(self.outer_party_probabilities.values())
-            each.rebel = random.choices(outerPartyRebelActions, weights=outerPartyRebelWeights, k=1)[0]
+            each.rebel_action = random.choices(outerPartyRebelActions, weights=outerPartyRebelWeights, k=1)[0]
           elif isinstance(each, Proles):
-            # here we assign the functionality of rebelled behaviour to the agent via the rebel variable
             prolesRebelActions = list(self.prole_probabilities.keys())
             prolesRebelWeights = list(self.prole_probabilities.values())
-            each.rebel = random.choices(prolesRebelActions, weights=prolesRebelWeights, k=1)[0]
+            each.rebel_action = random.choices(prolesRebelActions, weights=prolesRebelWeights, k=1)[0]
+        else:
+          each.rebel_action = None
 
   def initializeInnerParty(self):
     # Initialize InnerParty
-    self.numberOfInnerParty = self.agentDistribution[Classes.InnerParty]*self.initialPopulation
+    self.numberOfInnerParty = int(round(self.agentDistribution[Classes.InnerParty]*self.initialPopulation))
     for i in range(self.numberOfInnerParty):
         # Find a unique spot for the InnerParty agent
         x,y = self.findSpot()
@@ -330,7 +333,7 @@ class BasicModel(mesa.Model):
 
   def initalizeOuterParty(self):
     # Initialize OuterParty
-    numberOfOuterParty = self.agentDistribution[Classes.OuterParty]*self.initialPopulation
+    numberOfOuterParty = int(round(self.agentDistribution[Classes.OuterParty]*self.initialPopulation))
     outerPartyMinistryDistribution = get_ministry_distribution(self.ministryResourcesDistribution, Classes.OuterParty)
     
     for i in range(numberOfOuterParty):
@@ -338,7 +341,7 @@ class BasicModel(mesa.Model):
         x,y = self.findSpot()
 
         # get the ministry for outer party
-        ministry = get_Ministry_for_outer_party_and_prole(i, outerPartyMinistryDistribution)
+        ministry = choose_ministry(outerPartyMinistryDistribution)
 
         # Create and place the OuterParty agent
         outerParty = OuterParty(
@@ -353,6 +356,7 @@ class BasicModel(mesa.Model):
             rebel = False,
             ministry = ministry
         )
+        outerParty.rebel_action = None
         # put the outer party into certain ministry
         self.ministryMembers[ministry][Classes.OuterParty].append(outerParty)
             
@@ -364,14 +368,14 @@ class BasicModel(mesa.Model):
 
   def initializeProles(self):
     # Initialize Proles
-    numberOfProles = self.agentDistribution[Classes.Proles]*self.initialPopulation
+    numberOfProles = self.initialPopulation - int(round(self.agentDistribution[Classes.InnerParty]*self.initialPopulation)) - int(round(self.agentDistribution[Classes.OuterParty]*self.initialPopulation))
     prolesMinistryDistribution = get_ministry_distribution(self.ministryResourcesDistribution, Classes.Proles)
 
     for i in range(numberOfProles):
         # Find a unique spot for the Prole agent
         x,y = self.findSpot()
 
-        ministry = get_Ministry_for_outer_party_and_prole(i, prolesMinistryDistribution)
+        ministry = choose_ministry(prolesMinistryDistribution)
        
         # Create and place the Prole agent
         prole = Proles(
@@ -388,6 +392,7 @@ class BasicModel(mesa.Model):
             rebel = False,
             ministry = ministry,
         )
+        prole.rebel_action = None
 
         # put the proles into certain ministry
         self.ministryMembers[ministry][Classes.Proles].append(prole)
@@ -398,19 +403,23 @@ class BasicModel(mesa.Model):
         # Mark the spot as taken
         self.spotTaken.append(prole)
 
-  def getRandomOuterParty(self):
+  def getRandomOuterParty(self, exclude=None):
     """
       Get a random outerparty member to be murdured by rebelled agent
     """
-    choosenOuterParty = random.choice(self.loveMinistry.outerParties + self.truthMinistry.outerParties + self.peaceMinistry.outerParties + self.plentyMinistry.outerParties)
-    return choosenOuterParty
+    candidates = [agent for agent in (self.loveMinistry.outerParties + self.truthMinistry.outerParties + self.peaceMinistry.outerParties + self.plentyMinistry.outerParties) if agent.alive and agent is not exclude]
+    if not candidates:
+      return None
+    return random.choice(candidates)
 
-  def getRandomProle(self):
+  def getRandomProle(self, exclude=None):
     """
       Get a random prole member to be murdured by rebelled agent
     """
-    choosenOuterParty = random.choice( self.peaceMinistry.proles + self.plentyMinistry.proles)
-    return choosenOuterParty
+    candidates = [agent for agent in (self.peaceMinistry.proles + self.plentyMinistry.proles) if agent.alive and agent is not exclude]
+    if not candidates:
+      return None
+    return random.choice(candidates)
 
   def removeAgentFromMinistry(self, agent):
      """
@@ -419,33 +428,31 @@ class BasicModel(mesa.Model):
      if isinstance(agent, InnerParty):
         return
      if isinstance(agent, Proles):
-        for i in range(len(self.ministryMembers[agent.ministry][Proles])):
-           if self.ministryMembers[agent.ministry][Proles][i] == agent:
-              break
-        self.ministryMembers[agent.ministry][Proles].pop(i)
+        members = self.ministryMembers[agent.ministry][Classes.Proles]
+        if agent in members:
+          members.remove(agent)
      elif isinstance(agent, OuterParty):
-        for i in range(len(self.ministryMembers[agent.ministry][OuterParty])):
-           if self.ministryMembers[agent.ministry][OuterParty][i] == agent:
-              break
-        self.ministryMembers[agent.ministry][OuterParty].pop(i)
+        members = self.ministryMembers[agent.ministry][Classes.OuterParty]
+        if agent in members:
+          members.remove(agent)
 
   def getFoodConsumeRate(self, minConsumption, maxConsumption):
     """
     Return a normal distruibution sampled food consumption rate
     """
-    return self.random.uniform(minConsumption, maxConsumption+1)
+    return self.random.uniform(minConsumption, maxConsumption)
 
   def getFoodProductionRate(self, minProduction, maxProduction):
     """
     Return a normal distruibution sampled food production rate
     """
-    return self.random.uniform(minProduction, maxProduction+1)
+    return self.random.uniform(minProduction, maxProduction)
 
   def getWeaponProductionRate(self, minProduction, maxProduction):
     """
     Return a normal distruibution sampled weapon production rate
     """
-    return self.random.uniform(minProduction, maxProduction+1)
+    return self.random.uniform(minProduction, maxProduction)
 
   def findSpot(self):
     """ Efficiently finds a free (x, y) location by removing from the pre-generated list. """
@@ -461,6 +468,28 @@ class BasicModel(mesa.Model):
     else:
       raise ValueError("Release spot failed, spot already exist")
 
+  def record_death(self, cause):
+    if cause in self.death_counts:
+      self.death_counts[cause] += 1
+
+  def snapshot(self, step):
+    agents = []
+    for agent in self.spotTaken:
+      if agent.pos is None:
+        continue
+      agents.append({
+        "x": agent.pos[0],
+        "y": agent.pos[1],
+        "type": agent.__class__.__name__,
+        "rebel": bool(getattr(agent, "rebel", False)),
+      })
+    return {
+      "step": step,
+      "agents": agents,
+      "width": self.width,
+      "height": self.height,
+    }
+
 def get_ministry_distribution(ministryResourcesDistribution, class_type):
     """
     Calculate the range of indices for the specified class type across ministries.
@@ -473,24 +502,23 @@ def get_ministry_distribution(ministryResourcesDistribution, class_type):
         dict: A dictionary mapping ministries to index ranges for the specified class type.
     """
     distribution_range = {}
-    current_index = 1  # Start indexing from 1
-
     for ministry, allocation in ministryResourcesDistribution.items():
         if class_type in allocation:
-            count = allocation[class_type]
-            # Store the range of indices for this ministry
-            distribution_range[ministry] = (current_index, current_index + count - 1)
-            current_index += count
-
+            distribution_range[ministry] = allocation[class_type]
     return distribution_range
 
 
-# Function to determine the ministry for a given index
-def get_Ministry_for_outer_party_and_prole(index, ministryRange):
-    for ministry, (start, end) in ministryRange.items():
-        if start <= index <= end:
-            return ministry
-    return None  # In case the index is out of range
+def choose_ministry(ministry_weights):
+    ministries = list(ministry_weights.keys())
+    weights = [max(0, ministry_weights[m]) for m in ministries]
+    if sum(weights) == 0:
+        return random.choice(ministries)
+    return random.choices(ministries, weights=weights, k=1)[0]
 
 
-
+def compute_loyalty(current, sense_of_hunger, sense_of_safety):
+  hunger_penalty = min(100, max(0, sense_of_hunger))
+  safety_penalty = min(100, max(0, sense_of_safety))
+  base = 100 - ((hunger_penalty + safety_penalty) / 2)
+  loyalty = (current * 0.6) + (base * 0.4)
+  return max(0, min(100, loyalty))

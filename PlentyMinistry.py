@@ -1,6 +1,5 @@
 
-import numpy as np
-from Common import Classes, RebelProleActions
+from Common import Classes, RebelProleActions, RebelOuterPartyActions
 
 
 class PlentyMinistry():
@@ -21,8 +20,8 @@ class PlentyMinistry():
                proles, # a list of prole that work for peace that work for peace ministry
                outerParties, # a list of outer party that work for peace ministry
                nInnerParty, # number of inner party
-               diffusionRate, # Percentage of food to distribute to neighbors
-               varianceThreshold, # Variance threshold to determine convergence
+               diffusionRate = 0.25, # Percentage of food to distribute to neighbors
+               varianceThreshold = 0.5, # Variance threshold to determine convergence
               ):
     self.proles = proles
     self.outerParties = outerParties
@@ -42,65 +41,28 @@ class PlentyMinistry():
       Keep in mind that this function should take the number of OuterParty and rebel 
       and etc as input, as it impacts the food generation and distruibution process
     """
-    def diffuse(variance):
-      """
-      Recursive diffusion process to ensure global low variance.
-      Spreading is restricted to agentsPosition.
-      """
-      changes_made = False  # Track if any changes occur in this step
-      new_grid = np.zeros_like(foodGrid)  # Food will only exist in y_positions
-      for i, j in agentsPosition:
-          if foodGrid[i, j] > 0:  # Consider only cells with food
-              neighbors = [(ni, nj) for ni in range(max(0, i-1), min(gridSize, i+2))
-                          for nj in range(max(0, j-1), min(gridSize, j+2))
-                          if (ni, nj) != (i, j) and (ni, nj) in agentsPosition]
-              for ni, nj in neighbors:
-                  if foodGrid[i, j] > foodGrid[ni, nj]:  # Spread only if current cell is greater
-                      transfer = self.diffusionRate * (foodGrid[i, j] - foodGrid[ni, nj])  # Spread proportionally
-                      new_grid[ni, nj] += transfer
-                      new_grid[i, j] -= transfer
-                      changes_made = True
-
-      # Add the remaining unchanged food values back to new_grid
-      for i, j in agentsPosition:
-          new_grid[i, j] += foodGrid[i, j]
-
-      # If no changes were made, grid has stabilized
-      if not changes_made:
-          return new_grid
-
-      # Check variance among y_positions
-      currentV = np.var([new_grid[i, j] for i, j in agentsPosition])
-      if currentV < variance:
-          return new_grid  # Stop if variance is below threshold
-      else:
-          return diffuse(new_grid, agentsPosition)  # Recurse otherwise
-
-
-    # virtue food grid for collecting and distruting food
-    foodGrid = []
-
-    # get agent position
-    agentsPosition = [each[0] for each in agentsSpot]
+    agents = [agent for agent in agentsSpot if getattr(agent, "pos", None) is not None and agent.alive]
+    if not agents:
+      return
 
     # food generation
+    total_food = 0
     for each in self.proles:
-      if each.rebel == RebelProleActions.Misfunction:
-        # produce much less food than normal
-        foodGrid[each.pos[0]][each.pos[1]]=each.foodPRate * 0.1
-      else:
-        foodGrid[each.pos[0]][each.pos[1]]=each.foodPRate
+      if not each.alive:
+        continue
+      amount = each.foodPRate
+      if each.rebel_action == RebelProleActions.Misfunction:
+        amount = each.foodPRate * 0.1
+      total_food += amount
 
-    # food distruibution, take the number of rebelled outer party into account
-    for each in self.outerParties:
-      if each.rebel == RebelProleActions.Misfunction:
-        # the more rebelled outerParty, the higher value for varianceThreshold
-        variance += 2
-    distributed =  diffuse(variance)
+    # distribution efficiency depends on outer party performance
+    misfunction = sum(1 for each in self.outerParties if each.rebel_action == RebelOuterPartyActions.Misfunction)
+    efficiency = max(0.2, 1.0 - (0.05 * misfunction))
+    total_food *= efficiency
 
-    # allocate food to agents
-    for [agent,_] in agentsPosition:
-       agent.foodStock += distributed[agent.pos[0]][agent.pos[1]]
+    per_agent = total_food / len(agents)
+    for agent in agents:
+      agent.foodStock += per_agent
 
 
   def getMetricks(self):

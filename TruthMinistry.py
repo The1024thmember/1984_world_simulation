@@ -34,10 +34,12 @@ class TruthMinistry():
     """
     for agent in agents:
       if not agent.rebel:
-        if isinstance(agent, Classes.OuterParty):
+        if agent.__class__.__name__ == "OuterParty":
           agent.loyalty += random.uniform(self.outerPartiesLoyaltyScoreIncrease*0.5, self.outerPartiesLoyaltyScoreIncrease)
-        elif isinstance(agent, Classes.Proles):
+          agent.loyalty = max(0, min(100, agent.loyalty))
+        elif agent.__class__.__name__ == "Proles":
           agent.loyalty += random.uniform(self.proleLoyaltyScoreIncrease*0.8, self.proleLoyaltyScoreIncrease)
+          agent.loyalty = max(0, min(100, agent.loyalty))
 
   def interfereNegativeImpact(self, cause):
     """
@@ -57,8 +59,9 @@ class TruthMinistry():
     """
     currentRebelled = 0
     for agent in agents:
-      if not agent.rebel and agent.loyalty < 50:
-          currentRebelled += 1
+      if agent.__class__.__name__ in ("OuterParty", "Proles"):
+        if (not agent.rebel) and agent.loyalty < 50:
+            currentRebelled += 1
     delta = currentRebelled - self.numberOfTransformedRebelledAgents
     self.numberOfTransformedRebelledAgents = currentRebelled # record the current rebelled agents
     return delta, self.numberOfTransformedRebelledAgents 

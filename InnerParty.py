@@ -1,6 +1,7 @@
 ### Mesa version = 3.0.3
 import mesa
 import warnings
+import random
 
 from Common import CauseOfDeath, Classes, Ministry
 
@@ -32,6 +33,8 @@ class InnerParty(mesa.Agent):
     self.alive = alive
     self.foodCRate = foodCRate
     self.foodStock = foodStock
+    self.rebel = False
+    self.rebel_action = None
 
   """
     Inner party member can die from two ways:
@@ -42,14 +45,15 @@ class InnerParty(mesa.Agent):
   """
   def die(self, cause):
     self.alive = False
+    if self.pos is not None:
+      self.model.releaseSpot(self.pos)
     self.model.grid.remove_agent(self)
     self.model.schedule.remove(self)
+    self.model.record_death(cause)
     if cause == CauseOfDeath.Hunger:
-      self.spreadSenseOfHunger()
       self.model.plentyMinistry.numberOfDiedAgents[1]+=1
     elif cause == CauseOfDeath.BombAttack:
-      self.spreadSenseOfSatefy()
-      self.model.numberOfDiedAgents.numberOfDiedAgents[1]+=1
+      self.model.peaceMinistry.numberOfDiedAgents[1]+=1
 
   def consumeFood(self):
     """
@@ -57,7 +61,7 @@ class InnerParty(mesa.Agent):
     # 1. Consume food
     """    
     if self.foodStock < self.foodCRate:
-      self.die()
+      self.die(CauseOfDeath.Hunger)
 
   """
     Here we use class method, since the function execution is on the InnerParty level
@@ -109,10 +113,10 @@ class InnerParty(mesa.Agent):
 
     # Step 2: Define Normalization Ranges (Using Past Max Values)
     min_max_ranges = {
-        Ministry.Love: (0, max(20, existingMinistryMembers[Ministry.Love][1])),
-        Ministry.Truth: (0, max(15, existingMinistryMembers[Ministry.Truth][1])),
-        Ministry.Plenty: (0, max(30, existingMinistryMembers[Ministry.Plenty][1])),
-        Ministry.Peace: (0, max(20, existingMinistryMembers[Ministry.Peace][1]))
+        Ministry.Love: (0, max(20, len(existingMinistryMembers[Ministry.Love][Classes.OuterParty]))),
+        Ministry.Truth: (0, max(15, len(existingMinistryMembers[Ministry.Truth][Classes.OuterParty]))),
+        Ministry.Plenty: (0, max(30, len(existingMinistryMembers[Ministry.Plenty][Classes.OuterParty]) + len(existingMinistryMembers[Ministry.Plenty][Classes.Proles]))),
+        Ministry.Peace: (0, max(20, len(existingMinistryMembers[Ministry.Peace][Classes.OuterParty]) + len(existingMinistryMembers[Ministry.Peace][Classes.Proles])))
     }
     
     # **Step 3: Normalize Metrics Between [0,1]**
@@ -152,15 +156,22 @@ class InnerParty(mesa.Agent):
     # Step 6: Allocate Agents by Class to Ministries That Accept Them
     ministry_buckets = {m: {Classes.OuterParty: [], Classes.Proles: []} for m in new_allocation}
 
+    outer_targets = [m for m in new_allocation if Classes.OuterParty in new_allocation[m]]
+    outer_weights = [allocation_ratios[m] for m in outer_targets]
+    prole_targets = [m for m in new_allocation if Classes.Proles in new_allocation[m]]
+    prole_weights = [allocation_ratios[m] for m in prole_targets]
+    if sum(outer_weights) == 0:
+      outer_weights = [1 for _ in outer_targets]
+    if sum(prole_weights) == 0:
+      prole_weights = [1 for _ in prole_targets]
+
     for agent in outer_party_agents:
-        target_ministry = max(allocation_ratios, key=lambda m: allocation_ratios[m])
-        if Classes.OuterParty in new_allocation[target_ministry]:  # Only assign if valid
-            ministry_buckets[target_ministry][Classes.OuterParty].append(agent)
+        target_ministry = random.choices(outer_targets, weights=outer_weights, k=1)[0]
+        ministry_buckets[target_ministry][Classes.OuterParty].append(agent)
 
     for agent in prole_agents:
-        target_ministry = max(allocation_ratios, key=lambda m: allocation_ratios[m])
-        if Classes.Proles in new_allocation[target_ministry]:  # Only assign if valid
-            ministry_buckets[target_ministry][Classes.Proles].append(agent)
+        target_ministry = random.choices(prole_targets, weights=prole_weights, k=1)[0]
+        ministry_buckets[target_ministry][Classes.Proles].append(agent)
 
     # Step 7: Assign Agents to Ministries
     for ministry, agent_groups in ministry_buckets.items():
@@ -168,5 +179,16 @@ class InnerParty(mesa.Agent):
         if Classes.Proles in new_allocation[ministry]:  # Assign Proles only where needed
             new_allocation[ministry][Classes.Proles].extend(agent_groups[Classes.Proles])
 
+    for ministry, members in new_allocation.items():
+      for agent in members.get(Classes.OuterParty, []):
+        agent.ministry = ministry
+      for agent in members.get(Classes.Proles, []):
+        agent.ministry = ministry
+
     return new_allocation
 
+  @staticmethod
+  def normalize_metric(value, min_val, max_val):
+    if max_val <= min_val:
+      return 0
+    return max(0, min(1, (value - min_val) / (max_val - min_val)))

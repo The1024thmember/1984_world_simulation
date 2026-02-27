@@ -6,8 +6,7 @@ import random
 import mesa
 import warnings
 
-from Common import CauseOfDeath, Classes
-from Model import calculateDistance
+from Common import CauseOfDeath, Classes, calculateDistance
 
 # Suppress all UserWarnings, there are some UserWarning and DeprecationWarning
 # which spamming the terminal
@@ -54,6 +53,8 @@ class Proles(mesa.Agent):
     self.rebel = rebel
     self.ministry = ministry
     self.alpha = 1 # Controls how sharply loyalty impacts spread probability
+    self.spreadRange = 2
+    self.rebel_action = None
 
   def calculateLoyalty(self):
      pass
@@ -64,22 +65,22 @@ class Proles(mesa.Agent):
      Little chance the rebelled prole will be caught by Love ministry
      The higher the neighbour's loyalty score, the lower chance they get affected
     """
-    neighbors = self.get_neighbors()
+    neighbors = self.get_neighbors(radius=1)
     
     # apply love ministry's monitoring
-    if random.random() < self.model.loveMinistry.monitor(Classes.Prole):
+    if random.random() < self.model.loveMinistry.monitor(Classes.Proles):
        self.model.loveMinistry.rebelQueue.append(self)
 
     for neighbor in neighbors:
-      if not neighbor.is_rebel and isinstance(neighbor, Classes.Proles):
+      if (not neighbor.rebel) and isinstance(neighbor, Proles):
         # Compute spread probability (non-linear)
         loyalty_factor = (100 - neighbor.loyalty)/100  # Lower loyalty = Higher chance
         # apply love ministry's rebel supression randomly
-        suppression = self.model.loveMinistry.interfereRebellion(Classes.Prole) if random.randint(0,10) > 5 else 1
+        suppression = self.model.loveMinistry.interfereRebellion(Classes.Proles) if random.randint(0,10) > 5 else 1
         spread_probability = (1 - math.exp(-self.alpha * loyalty_factor)) * suppression        
         if random.random() < spread_probability:
           # dreacse loyalty score
-          neighbor.loyalty -= 10
+          neighbor.loyalty = max(0, neighbor.loyalty - 10)
 
   """
     Proles can die from five ways:
@@ -92,16 +93,19 @@ class Proles(mesa.Agent):
     remove from the grid, reduce the number Proles in corresponding ministry
   """
   def die(self, cause):
-    self.alive = False
-    self.model.grid.remove_agent(self)
-    self.model.schedule.remove(self)
     # Based on the died cause, trigger the following effect
     if cause == CauseOfDeath.Hunger:
       self.spreadSenseOfHunger()
       self.model.plentyMinistry.numberOfDiedAgents[1]+=1
     elif cause == CauseOfDeath.BombAttack:
       self.spreadSenseOfSatefy()
-      self.model.numberOfDiedAgents.numberOfDiedAgents[1]+=1
+      self.model.peaceMinistry.numberOfDiedAgents[1]+=1
+    self.alive = False
+    if self.pos is not None:
+      self.model.releaseSpot(self.pos)
+    self.model.grid.remove_agent(self)
+    self.model.schedule.remove(self)
+    self.model.record_death(cause)
 
   def consumeFood(self):
     """
@@ -127,11 +131,14 @@ class Proles(mesa.Agent):
         Assumes there is a function `getAllAgents()` that returns all agents in the grid.
         """
         neighbors = []
-        for other in self.getAllAgents():
-            if other != self:
-                distance = calculateDistance(self, other)
-                if distance <= rangeLimit:
-                    neighbors.append(other)
+        if self.pos is None:
+            return neighbors
+        for other in self.model.spotTaken:
+            if other == self or (not other.alive) or other.pos is None:
+                continue
+            distance = calculateDistance(self, other)
+            if distance <= rangeLimit:
+                neighbors.append(other)
         return neighbors
   
 
@@ -141,16 +148,16 @@ class Proles(mesa.Agent):
       Take account of truthMinistry to interfere with the spreading
     """
     # Get neighbors within the spreading range
-    neighbors = self.getNeighbors(self, self.spreadRange)
+    neighbors = self.getNeighbors(self.spreadRange)
 
     for neighbor in neighbors:
-        if not neighbor.rebel: # there is no point of updating rebeled agent
+        if (not neighbor.rebel) and hasattr(neighbor, "senseOfHunger"):
           # Hunger impact increases if food stock is low
           foodRatio = neighbor.foodStock / max(1, neighbor.foodCRate) 
           hungerImpact = max(0, 1 - (foodRatio / 5))
 
           # Distance decay effect
-          distance = self.calculateDistance(self, neighbor)
+          distance = calculateDistance(self, neighbor)
           impact = max(0, hungerImpact * (1 - (distance / self.spreadRange)))
 
           # TruthMinistry interference
@@ -172,9 +179,9 @@ class Proles(mesa.Agent):
     neighbors = self.getNeighbors(self.spreadRange)
 
     for neighbor in neighbors:
-        if not neighbor.rebel: # there is no point of updating rebeled agent
+        if (not neighbor.rebel) and hasattr(neighbor, "senseOfSafety"):
           # Calculate distance decay effect (weaker impact as distance increases)
-          distance = self.calculateDistance(self, neighbor)
+          distance = calculateDistance(self, neighbor)
           impact = max(0, 1 - (distance / self.spreadRange))  # Normalized impact
 
           # TruthMinistry interference (random fluctuation)
@@ -189,4 +196,3 @@ class Proles(mesa.Agent):
   
   def step(self):
     pass
-

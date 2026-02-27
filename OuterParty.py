@@ -4,8 +4,7 @@ import random
 import mesa
 import warnings
 
-from Common import CauseOfDeath, Classes
-from Model import calculateDistance
+from Common import CauseOfDeath, Classes, calculateDistance
 
 # Suppress all UserWarnings, there are some UserWarning and DeprecationWarning
 # which spamming the terminal
@@ -52,6 +51,8 @@ class OuterParty(mesa.Agent):
     self.rebel = rebel
     self.ministry = ministry
     self.alpha = 5 # Controls how sharply loyalty impacts spread probability
+    self.spreadRange = 2
+    self.rebel_action = None
 
   def calculateLoyalty(self):
      pass
@@ -71,21 +72,21 @@ class OuterParty(mesa.Agent):
     # move around
     new_x, new_y = self.model.findSpot()
     self.model.releaseSpot(self.pos)
-    self.pos = (new_x, new_y)
+    self.model.grid.move_agent(self, (new_x, new_y))
 
     # get the neighbour in the new location
-    neighbors = self.get_neighbors()
+    neighbors = self.get_neighbors(radius=1)
 
     # spread rebel only when there is lower loyalty outerParty as neighbour
     for neighbor in neighbors:
-      if not neighbor.is_rebel and isinstance(neighbor, Classes.OuterParty):
+      if (not neighbor.rebel) and isinstance(neighbor, OuterParty):
         loyalty_factor = (100 - neighbor.loyalty)/100 
         if loyalty_factor > 0.4:
           suppression = self.model.loveMinistry.interfereRebellion(Classes.OuterParty) if random.randint(0,10) > 5 else 1
           spread_probability = (1 - math.exp(-self.alpha * loyalty_factor)) * suppression        
           if random.random() < spread_probability:
             # decrease loyalty score
-            neighbor.loyalty -= 20           
+            neighbor.loyalty = max(0, neighbor.loyalty - 20)
             
   """
     OuterParty can die from 3 ways:
@@ -98,16 +99,19 @@ class OuterParty(mesa.Agent):
     remove from the grid, reduce the number OuterParty in corresponding minitry
   """
   def die(self, cause):
-    self.alive = False
-    self.model.grid.remove_agent(self)
-    self.model.schedule.remove(self)    
     # Based on the died cause, trigger the following effect
     if cause == CauseOfDeath.Hunger:
       self.spreadSenseOfHunger()
       self.model.plentyMinistry.numberOfDiedAgents[1]+=1
     elif cause == CauseOfDeath.BombAttack:
       self.spreadSenseOfSatefy()
-      self.model.numberOfDiedAgents.numberOfDiedAgents[1]+=1
+      self.model.peaceMinistry.numberOfDiedAgents[1]+=1
+    self.alive = False
+    if self.pos is not None:
+      self.model.releaseSpot(self.pos)
+    self.model.grid.remove_agent(self)
+    self.model.schedule.remove(self)    
+    self.model.record_death(cause)
 
   def consumeFood(self):
     """
@@ -134,11 +138,14 @@ class OuterParty(mesa.Agent):
       Assumes there is a function `getAllAgents()` that returns all agents in the grid.
       """
       neighbors = []
-      for other in self.getAllAgents():
-          if other != self:
-              distance = calculateDistance(self, other)
-              if distance <= rangeLimit:
-                  neighbors.append(other)
+      if self.pos is None:
+          return neighbors
+      for other in self.model.spotTaken:
+          if other == self or (not other.alive) or other.pos is None:
+              continue
+          distance = calculateDistance(self, other)
+          if distance <= rangeLimit:
+              neighbors.append(other)
       return neighbors
   
   def spreadSenseOfHunger(self):
@@ -147,16 +154,16 @@ class OuterParty(mesa.Agent):
       Take account of truthMinistry to interfere with the spreading
     """
     # Get neighbors within the spreading range
-    neighbors = self.getNeighbors(self, self.spreadRange)
+    neighbors = self.getNeighbors(self.spreadRange)
 
     for neighbor in neighbors:
-        if not neighbor.rebel: # there is no point of updating rebeled agent
+        if (not neighbor.rebel) and hasattr(neighbor, "senseOfHunger"):
           # Hunger impact increases if food stock is low
           foodRatio = neighbor.foodStock / max(1, neighbor.foodCRate) 
           hungerImpact = max(0, 1 - (foodRatio / 5))
 
           # Distance decay effect
-          distance = self.calculateDistance(self, neighbor)
+          distance = calculateDistance(self, neighbor)
           impact = max(0, hungerImpact * (1 - (distance / self.spreadRange)))
 
           # TruthMinistry interference
@@ -178,9 +185,9 @@ class OuterParty(mesa.Agent):
     neighbors = self.getNeighbors(self.spreadRange)
 
     for neighbor in neighbors:
-        if not neighbor.rebel: # there is no point of updating rebeled agent
+        if (not neighbor.rebel) and hasattr(neighbor, "senseOfSafety"):
           # Calculate distance decay effect (weaker impact as distance increases)
-          distance = self.calculateDistance(self, neighbor)
+          distance = calculateDistance(self, neighbor)
           impact = max(0, 1 - (distance / self.spreadRange))  # Normalized impact
 
           # TruthMinistry interference (random fluctuation)
@@ -196,5 +203,3 @@ class OuterParty(mesa.Agent):
   
   def step(self):
     pass
-
-

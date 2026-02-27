@@ -65,14 +65,18 @@ class LoveMinistry():
     numberOfCase = math.ceil(len(self.outerParties)//2)
     while numberOfCase > 0 and len(self.rebelQueue)>0:
       rebelledAgent = self.rebelQueue.pop(0)
-      if isinstance(rebelledAgent, Classes.Proles):
+      if not rebelledAgent.alive:
+        numberOfCase -= 1
+        continue
+      if rebelledAgent.__class__.__name__ == "Proles":
         self.executeAgent(rebelledAgent)
-      if isinstance(rebelledAgent, Classes.OuterParty):
+      if rebelledAgent.__class__.__name__ == "OuterParty":
         executeOuterParty = random.choice([True,False])
         if executeOuterParty:
           self.executeAgent(rebelledAgent)
         else:
           self.transformAgent(rebelledAgent)
+      numberOfCase -= 1
 
   def getMetricks(self):
     """

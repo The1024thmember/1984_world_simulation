@@ -1,5 +1,5 @@
 import random
-from Common import Classes, RebelProleActions
+from Common import Classes, RebelProleActions, RebelOuterPartyActions
 
 
 class PeaceMinistry():
@@ -33,12 +33,13 @@ class PeaceMinistry():
       Collect weapons built by proles
     """
     # generate weapon
+    self.weapons = 0
     for each in self.proles:
       if each.rebel == RebelProleActions.Misfunction:
         # produce much less weapon than normal
-        self.weapons=each.weaponPRate * 0.1
+        self.weapons += each.weaponPRate * 0.1
       else:
-        self.weapons=each.foodPRate
+        self.weapons += each.weaponPRate
 
   def defendBombAttack(self, bomb):
     """
@@ -55,8 +56,9 @@ class PeaceMinistry():
     # Step 1: Calculate precision based on outer party members
     precision = 0
     for each in self.outerParties:
-      if each.rebel != RebelProleActions.Misfunction:
+      if each.rebel_action != RebelOuterPartyActions.Misfunction:
         precision += 0.14 # this is due to there can be 6 outerparty on peace ministry, if all of them are work their best, should be 85% of precision
+    precision = max(0.0, min(1.0, precision))
 
     # Step 2: Predict the attack center and radius using precision
     predicted_center_x = center_x + random.randint(-int((1 - precision) * radius), int((1 - precision) * radius))

@@ -1,6 +1,7 @@
 
 
 from enum import Enum
+import math
 
 class Ministry(Enum):
     Peace = 1
@@ -29,3 +30,8 @@ class RebelProleActions(Enum):
    KillOuterParty = 2
    Misfunction = 3
 
+
+def calculateDistance(a, b):
+   ax, ay = a.pos
+   bx, by = b.pos
+   return math.sqrt((ax - bx) ** 2 + (ay - by) ** 2)

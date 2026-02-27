@@ -23,9 +23,16 @@ class BombAttack():
     self.frequency = frequency
     self.avgImpactSize = avgImpactSize
     self.avgIntensity = avgIntensity
+    self.width = width
+    self.height = height
     # record the historical attacks
     # eg: [[center_x, center_y, radius, intensity], ...]
     self.historicalAttacks = [] 
+
+  def should_attack(self):
+      if self.frequency <= 0:
+          return False
+      return random.random() < self.frequency
 
   def attack(self):
       """
