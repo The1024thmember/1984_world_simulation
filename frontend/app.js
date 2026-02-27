@@ -96,6 +96,7 @@ class Simulation {
     this.series = [];
     this.deathSeries = [];
     this.stepCount = 0;
+    this.stepDeaths = this.initDeathCounts();
   }
 
   initDeathCounts() {
@@ -278,7 +279,8 @@ class Simulation {
       outerLoyalty: avgLoyalty(outer),
       proleLoyalty: avgLoyalty(proles),
     });
-    this.deathSeries.push({ step: this.stepCount, counts: this.stepDeaths });
+    const snapshot = this.stepDeaths ? JSON.parse(JSON.stringify(this.stepDeaths)) : this.initDeathCounts();
+    this.deathSeries.push({ step: this.stepCount, counts: snapshot });
   }
 }
 
@@ -411,6 +413,7 @@ function drawPlot() {
   let maxVal = Math.max(...series.map(s => s.population), 1);
 
   for (const entry of deaths) {
+    if (!entry.counts) continue;
     for (const role of ROLES) {
       for (const cause of CAUSES) {
         maxVal = Math.max(maxVal, entry.counts[role][cause]);
@@ -447,7 +450,7 @@ function drawPlot() {
 
   for (const role of ROLES) {
     for (const cause of CAUSES) {
-      const values = deaths.map(d => d.counts[role][cause]);
+      const values = deaths.map(d => (d.counts ? d.counts[role][cause] : 0));
       drawLine(values, COLOR_MAP[role][cause], 1);
     }
   }
